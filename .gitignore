@@ -1,0 +1,12 @@
+.DS_Store
+*.bak
+*.pyc
+__pycache__/
+.venv/
+node_modules/
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+/tmp/
