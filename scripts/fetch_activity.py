@@ -57,6 +57,7 @@ COINGECKO_ID = {
     "Pepu":         "pepe-unchained",
     "Moonchain":    "moonchain",
     "Mind Network": "mind-network",
+    "Zircuit":      "zircuit",
 }
 
 def curl_json(url):
