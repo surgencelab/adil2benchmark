@@ -1,0 +1,36 @@
+name: refresh-data
+
+on:
+  workflow_dispatch:  # triggerable from GitHub UI or via API
+    inputs:
+      reason:
+        description: 'why this refresh was triggered'
+        required: false
+        default: 'manual'
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run all fetchers + merge
+        run: python3 scripts/refresh_all.py
+
+      - name: Commit refreshed data.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet public/data.json; then
+            echo "no data changes"
+            exit 0
+          fi
+          git add public/data.json
+          git commit -m "data: scheduled refresh ($(date -u +%Y-%m-%d))"
+          git push

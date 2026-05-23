@@ -1,0 +1,2873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ADI Chain · L2 Benchmark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ════════════════════════════════════════════════════════════════
+       DatumLabs TUI tokens, ported from datumlabs-sdk/dashboard-kit
+       (src/theme/globals.css). Light-mode only, monospace-first.
+       ════════════════════════════════════════════════════════════════ */
+    :root {
+      /* Dark terminal surface (default) */
+      --background:   #0A0B0E;
+      --foreground:   #E8EAEF;
+      --card:         #12141A;
+      --card-hover:   #1A1D24;
+      --panel-header: #0E1014;
+      --border:        rgba(255,255,255,0.06);
+      --border-bright: rgba(255,255,255,0.14);
+      --text-muted:    #7C828F;
+      --text-dim:      #4F5460;
+      /* Hover / overlay tints used by chart gridlines, table hovers etc.
+         These flip between themes. */
+      --tint-soft:     rgba(255,255,255,0.04);
+      --tint-medium:   rgba(255,255,255,0.06);
+      --tint-strong:   rgba(255,255,255,0.20);
+      /* Brand accents, calibrated for dark surface */
+      --accent-orange: #FF8B4D;
+      --accent-red:    #FF5A5F;
+      --accent-blue:   #4F7CFF;
+      --accent-green:  #2ECC71;
+      --accent-yellow: #F5B544;
+      --accent-purple: #B266FF;
+      --accent-cyan:   #00CFE8;
+      /* Fonts */
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+    }
+
+    /* Light mode override */
+    body[data-theme="light"] {
+      --background:   #F6F7FA;
+      --foreground:   #0F1115;
+      --card:         #FFFFFF;
+      --card-hover:   #EEF0F4;
+      --panel-header: #FAFBFC;
+      --border:        rgba(15,17,21,0.08);
+      --border-bright: rgba(15,17,21,0.16);
+      --text-muted:    #5B6373;
+      --text-dim:      #9098A6;
+      --tint-soft:     rgba(15,17,21,0.03);
+      --tint-medium:   rgba(15,17,21,0.06);
+      --tint-strong:   rgba(15,17,21,0.20);
+      /* Accents tuned for white surface (slightly darker for AA contrast) */
+      --accent-orange: #E55A1F;
+      --accent-red:    #D6322E;
+      --accent-blue:   #3B5FE0;
+      --accent-green:  #0F9D58;
+      --accent-yellow: #D97706;
+      --accent-purple: #9B4AE0;
+      --accent-cyan:   #0090B2;
+    }
+
+    /* Brand tile reads orange on white in light mode */
+    body[data-theme="light"] .sidebar-brand { color: #FFFFFF; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--background);
+      color: var(--foreground);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    /* ─── Scrollbar (thin, like the SDK) ─── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--background); }
+    ::-webkit-scrollbar-thumb { background: rgba(15,17,21,0.15); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(15,17,21,0.25); }
+
+    /* ════════════════════════════════════════════════════════════════
+       Layout shell, top nav, main, status bar
+       ════════════════════════════════════════════════════════════════ */
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      grid-template-rows: 32px 36px 1fr 28px;
+      grid-template-areas:
+        "sidebar ticker"
+        "sidebar topnav"
+        "sidebar main"
+        "sidebar statusbar";
+    }
+    .sidebar-nav {
+      grid-area: sidebar;
+      background: var(--panel-header);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0; gap: 4px;
+    }
+    .sidebar-brand {
+      width: 36px; height: 36px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--accent-orange), #FFA56C);
+      display: flex; align-items: center; justify-content: center;
+      color: #0A0B0E; font-weight: 800; font-size: 12px;
+      letter-spacing: 0.04em; margin-bottom: 12px;
+    }
+    .sidebar-item {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 6px;
+      cursor: pointer; position: relative;
+      color: var(--text-muted);
+      transition: color .12s ease, background .12s ease;
+    }
+    .sidebar-item:hover {
+      color: var(--accent-orange);
+      background: rgba(255,139,77,0.08);
+    }
+    .sidebar-item.active {
+      color: var(--accent-orange);
+      background: rgba(255,139,77,0.12);
+    }
+    .sidebar-item.active::before {
+      content: ""; position: absolute; left: -10px; top: 8px; bottom: 8px;
+      width: 2px; background: var(--accent-orange); border-radius: 2px;
+    }
+    .sidebar-item .tip {
+      position: absolute; left: 48px; top: 50%; transform: translateY(-50%);
+      background: var(--card); color: var(--foreground);
+      padding: 4px 10px; border-radius: 3px;
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.06em; white-space: nowrap;
+      opacity: 0; pointer-events: none; transition: opacity .12s ease;
+      border: 1px solid var(--border-bright);
+      z-index: 50;
+    }
+    .sidebar-item:hover .tip { opacity: 1; }
+    .sidebar-item .kbd-mini {
+      position: absolute; right: 2px; bottom: 2px;
+      font-size: 7.5px; color: var(--text-dim);
+      font-family: var(--font-mono); font-weight: 600;
+    }
+    .sidebar-spacer { flex: 1; }
+
+    /* Top nav now smaller, just for cmd-palette + LIVE indicator */
+    .top-nav {
+      grid-area: topnav;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+    .top-nav-inner {
+      max-width: 100%; margin: 0;
+      padding: 0 16px;
+      height: 100%;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .ticker { grid-area: ticker; }
+    .main-wrap { grid-area: main; overflow: auto; }
+    .status-bar { grid-area: statusbar; }
+    .brand-cluster { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 22px; height: 22px; border-radius: 3px;
+      background: linear-gradient(135deg, var(--accent-orange), #FF8A5C);
+      display: inline-flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 11px; letter-spacing: 0.04em;
+    }
+    .brand-sep { color: var(--text-muted); font-size: 10px; }
+    .brand-title {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em;
+      color: var(--text-muted);
+    }
+    .nav-cluster { display: flex; align-items: center; gap: 16px; }
+    .nav-items { display: flex; align-items: center; gap: 2px; }
+    .nav-link {
+      padding: 5px 10px; font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-muted); border-radius: 3px;
+      border-bottom: 1px solid transparent;
+      transition: color .12s ease, background .12s ease, border-color .12s ease;
+      cursor: pointer;
+    }
+    .nav-link:hover { color: var(--foreground); }
+    .nav-link.active {
+      color: var(--accent-orange);
+      background: rgba(255,107,53,0.08);
+      border-bottom: 1px solid var(--accent-orange);
+    }
+    .live-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .export-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      padding: 4px 10px; border: 1px solid var(--border-bright);
+      border-radius: 3px; background: var(--card);
+      cursor: pointer; transition: all .15s ease;
+      font-family: var(--font-mono);
+    }
+    .export-btn:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .export-btn:disabled { opacity: 0.5; cursor: wait; }
+
+    /* ════════════════════════════════════════════════════════════════
+       Chart toolbar (ChartWrapper pattern)
+       ════════════════════════════════════════════════════════════════ */
+    .chart-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+    .time-pills { display: flex; gap: 4px; }
+    .time-pill {
+      padding: 4px 10px; font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+      border: 1px solid var(--border); border-radius: 3px;
+      background: transparent; color: var(--text-muted);
+      cursor: pointer; transition: all .15s ease;
+      font-family: var(--font-mono);
+    }
+    .time-pill:hover { border-color: var(--border-bright); color: var(--foreground); }
+    .time-pill.active { border-color: var(--accent-orange); color: var(--accent-orange); background: rgba(255,107,53,0.08); }
+    .chart-actions { display: flex; gap: 4px; align-items: center; }
+    .chart-action-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px;
+      border: 1px solid var(--border); border-radius: 3px;
+      background: transparent; color: var(--text-muted); cursor: pointer;
+      transition: all .15s ease;
+    }
+    .chart-action-btn:hover { border-color: var(--accent-orange); color: var(--accent-orange); background: rgba(255,107,53,0.06); }
+    .chart-actions-sep { width: 1px; height: 14px; background: var(--border); margin: 0 4px; }
+    .chart-canvas {
+      position: relative;
+      background: var(--card);
+    }
+    .chart-watermark {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+      font-family: var(--font-mono); font-size: 64px; font-weight: 700;
+      letter-spacing: 0.16em; color: var(--foreground);
+      opacity: 0.035; text-transform: uppercase;
+    }
+    .chart-footer {
+      padding: 10px 14px; border-top: 1px solid var(--border);
+      background: var(--panel-header);
+      font-size: 11px; color: var(--text-muted);
+      display: flex; gap: 18px; flex-wrap: wrap;
+    }
+    .chart-footer .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+    .chart-footer .legend-sw { display: inline-block; width: 18px; height: 3px; }
+    .chart-footer .legend-band { display: inline-block; width: 14px; height: 10px; border: 1px solid var(--border); }
+    .read-note {
+      margin: 0; padding: 12px 14px;
+      background: var(--panel-header);
+      border-top: 1px solid var(--border);
+      font-family: var(--font-sans); font-size: 12.5px; line-height: 1.6;
+      color: var(--text-muted);
+    }
+    .read-note strong { color: var(--foreground); }
+    .read-note .danger-text { color: var(--accent-red); font-weight: 600; }
+
+    /* ════════════════════════════════════════════════════════════════
+       Report pages, paper-styled prose pages
+       ════════════════════════════════════════════════════════════════ */
+    .report-stack { display: grid; gap: 24px; }
+    .report-page {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 48px 56px 56px;
+      position: relative;
+      overflow: hidden;
+      max-width: 920px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .report-page::before {
+      content: "";
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      opacity: 0.45;
+    }
+    .report-meta {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-family: var(--font-mono); font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--text-muted); margin-bottom: 22px;
+      padding-bottom: 14px; border-bottom: 1px solid var(--border);
+    }
+    .report-meta .label { color: var(--accent-orange); font-weight: 700; }
+    .report-h1 {
+      font-family: var(--font-sans);
+      font-size: 28px; font-weight: 700; letter-spacing: -0.015em;
+      color: var(--foreground); margin: 0 0 8px;
+    }
+    .report-lede {
+      font-family: var(--font-sans);
+      font-size: 15px; line-height: 1.6; color: var(--text-muted);
+      margin: 0 0 28px; max-width: 60ch;
+    }
+    .report-h2 {
+      font-family: var(--font-sans);
+      font-size: 17px; font-weight: 700;
+      color: var(--foreground); margin: 28px 0 10px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+    }
+    .report-h2:first-of-type { padding-top: 0; border-top: none; margin-top: 0; }
+    .report-h2 .num {
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.1em; color: var(--accent-orange);
+      margin-right: 10px; font-weight: 700;
+    }
+    .report-p {
+      font-family: var(--font-sans);
+      font-size: 14.5px; line-height: 1.7; color: var(--foreground);
+      margin: 0 0 14px; max-width: 70ch;
+    }
+    .report-p.muted { color: var(--text-muted); }
+    .report-p b { color: var(--foreground); font-weight: 600; }
+    .report-callout {
+      background: rgba(255,107,53,0.06);
+      border-left: 3px solid var(--accent-orange);
+      padding: 14px 18px; border-radius: 0 4px 4px 0;
+      margin: 14px 0 18px;
+      font-family: var(--font-sans); font-size: 14px; line-height: 1.65;
+      color: var(--foreground);
+    }
+    .report-callout strong { color: var(--accent-orange); }
+    .report-callout.danger {
+      background: rgba(214,50,46,0.06);
+      border-left-color: var(--accent-red);
+    }
+    .report-callout.danger strong { color: var(--accent-red); }
+    .report-figures {
+      display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px;
+      margin: 18px 0 22px;
+      padding: 16px;
+      background: var(--panel-header); border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+    .report-fig {
+      padding: 4px 12px; border-left: 2px solid var(--border);
+    }
+    .report-fig:first-child { border-left: none; padding-left: 4px; }
+    .report-fig .l {
+      font-family: var(--font-mono); font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--text-muted); margin-bottom: 4px;
+    }
+    .report-fig .v {
+      font-family: var(--font-mono); font-size: 18px; font-weight: 700;
+      color: var(--foreground); font-variant-numeric: tabular-nums;
+    }
+    .report-fig .v.danger { color: var(--accent-red); }
+    .report-fig .s {
+      font-family: var(--font-sans); font-size: 11px;
+      color: var(--text-muted); margin-top: 2px;
+    }
+    .report-list {
+      margin: 0 0 16px; padding: 0; list-style: none;
+      display: grid; gap: 12px;
+    }
+    .report-list li {
+      display: grid; grid-template-columns: 28px 1fr; gap: 12px;
+      font-family: var(--font-sans); font-size: 14.5px; line-height: 1.6;
+      color: var(--foreground);
+    }
+    .report-list .num {
+      font-family: var(--font-mono); font-size: 11px;
+      color: var(--accent-orange); font-weight: 700;
+      padding-top: 4px;
+    }
+    .report-list b { color: var(--foreground); font-weight: 600; }
+    .report-footer {
+      margin-top: 28px; padding-top: 14px;
+      border-top: 1px solid var(--border);
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex; justify-content: space-between;
+    }
+    @media (max-width: 768px) {
+      .report-page { padding: 28px 22px 32px; }
+      .report-h1 { font-size: 22px; }
+      .report-figures { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       Ticker bar (Bloomberg-style scrolling top strip)
+       ════════════════════════════════════════════════════════════════ */
+    .ticker {
+      background: var(--panel-header);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden; height: 32px;
+      display: flex; align-items: center;
+      font-family: var(--font-mono); font-size: 11.5px;
+      position: relative;
+    }
+    .ticker-inner {
+      display: inline-flex; gap: 28px; padding: 0 16px;
+      animation: ticker-scroll 50s linear infinite;
+      white-space: nowrap;
+    }
+    .ticker:hover .ticker-inner { animation-play-state: paused; }
+    @keyframes ticker-scroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .ticker-item { display: inline-flex; gap: 6px; align-items: center; }
+    .ticker-item .l {
+      font-size: 10px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .ticker-item .v { color: var(--foreground); font-weight: 600; }
+    .ticker-item .v.up   { color: var(--accent-green); }
+    .ticker-item .v.down { color: var(--accent-red); }
+    .ticker-item .v.warn { color: var(--accent-yellow); }
+    .ticker-sep { color: var(--text-dim); }
+
+    /* ════════════════════════════════════════════════════════════════
+       Terminal grid, Bloomberg-style multi-panel layout
+       ════════════════════════════════════════════════════════════════ */
+    .term-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 10px;
+      padding: 10px;
+    }
+    .w-3  { grid-column: span 3; }
+    .w-4  { grid-column: span 4; }
+    .w-5  { grid-column: span 5; }
+    .w-6  { grid-column: span 6; }
+    .w-7  { grid-column: span 7; }
+    .w-8  { grid-column: span 8; }
+    .w-9  { grid-column: span 9; }
+    .w-12 { grid-column: span 12; }
+
+    .widget {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      display: flex; flex-direction: column;
+      min-height: 0;
+      position: relative;
+    }
+    .widget::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      opacity: 0.32;
+    }
+    .widget-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 12px;
+      background: var(--panel-header);
+      border-bottom: 1px solid var(--border);
+      min-height: 28px;
+    }
+    .widget-title {
+      font-family: var(--font-mono);
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--accent-orange);
+    }
+    .widget-meta {
+      font-family: var(--font-mono);
+      font-size: 9.5px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .widget-body { padding: 10px 12px; overflow: auto; flex: 1; }
+    .widget-body.flush { padding: 0; }
+
+    /* Compact KPI row used inside widgets */
+    .stat-row {
+      display: flex; gap: 14px; flex-wrap: wrap;
+    }
+    .stat {
+      display: flex; flex-direction: column; gap: 2px;
+      min-width: 80px;
+    }
+    .stat .l {
+      font-family: var(--font-mono); font-size: 9px;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.1em; font-weight: 600;
+    }
+    .stat .v {
+      font-family: var(--font-mono); font-size: 17px;
+      font-weight: 700; color: var(--foreground);
+      font-variant-numeric: tabular-nums; line-height: 1.1;
+    }
+    .stat .v.warn { color: var(--accent-yellow); }
+    .stat .v.down { color: var(--accent-red); }
+    .stat .v.up   { color: var(--accent-green); }
+    .stat .s {
+      font-family: var(--font-mono); font-size: 9.5px;
+      color: var(--text-muted);
+    }
+
+    /* Dense ranking list inside a widget */
+    .rank-row {
+      display: grid; grid-template-columns: 16px 1fr auto;
+      gap: 8px; padding: 4px 0;
+      font-family: var(--font-mono); font-size: 11.5px;
+      border-bottom: 1px solid var(--border);
+      align-items: baseline;
+    }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-row .idx { color: var(--text-dim); font-size: 10px; }
+    .rank-row .name { color: var(--foreground); }
+    .rank-row .name .sym {
+      color: var(--text-muted); font-size: 10px;
+      margin-left: 4px;
+    }
+    .rank-row .val { color: var(--foreground); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .rank-row.adi .name { color: var(--accent-red); font-weight: 700; }
+    .rank-row.adi .val  { color: var(--accent-red); font-weight: 700; }
+    .rank-row .val.warn { color: var(--accent-yellow); }
+    .rank-row .val.down { color: var(--accent-red); }
+
+    /* Command palette */
+    .cmd-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.6);
+      display: flex; align-items: flex-start; justify-content: center;
+      padding-top: 80px;
+    }
+    .cmd-box {
+      width: 560px; max-width: 90vw;
+      background: var(--card); border: 1px solid var(--border-bright);
+      border-radius: 6px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+    .cmd-input {
+      width: 100%; padding: 14px 18px;
+      background: transparent; border: none; outline: none;
+      color: var(--foreground); font-family: var(--font-mono);
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .cmd-input::placeholder { color: var(--text-muted); }
+    .cmd-list { padding: 6px; max-height: 360px; overflow: auto; }
+    .cmd-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px; cursor: pointer; border-radius: 3px;
+      font-family: var(--font-mono); font-size: 12px;
+      color: var(--foreground);
+    }
+    .cmd-item:hover, .cmd-item.active {
+      background: rgba(255,139,77,0.10);
+      color: var(--accent-orange);
+    }
+    .cmd-item .kbd {
+      font-size: 10px; color: var(--text-muted);
+      padding: 1px 6px; border: 1px solid var(--border-bright);
+      border-radius: 2px; letter-spacing: 0.06em;
+    }
+
+    .cmd-hint {
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.1em; padding: 4px 10px;
+      border: 1px solid var(--border); border-radius: 3px;
+      background: var(--panel-header);
+      cursor: pointer;
+    }
+    .cmd-hint:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .cmd-hint .kbd {
+      background: var(--tint-medium);
+      padding: 1px 5px; border-radius: 2px;
+      margin-left: 6px; color: var(--foreground);
+    }
+
+    /* Sparkline */
+    .spark { display: inline-block; vertical-align: middle; }
+
+    /* Position read (Overview "where ADI sits" panel) */
+    .position-read {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+      padding: 14px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 4px;
+      position: relative; overflow: hidden;
+    }
+    .position-read::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      opacity: 0.3;
+    }
+    .position-read .pr-cell {
+      padding: 4px 10px; border-left: 2px solid var(--border);
+    }
+    .position-read .pr-cell:first-child { border-left: none; padding-left: 4px; }
+    .position-read .pr-label {
+      font-size: 10px; color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.1em; font-weight: 600; margin-bottom: 4px;
+      font-family: var(--font-mono);
+    }
+    .position-read .pr-value {
+      font-family: var(--font-sans); font-size: 13px; line-height: 1.5;
+      color: var(--foreground);
+    }
+    .position-read .pr-value b { color: var(--accent-orange); }
+    .position-read .pr-value .danger { color: var(--accent-red); }
+    .position-read .pr-value .warn   { color: var(--accent-yellow); }
+
+    /* Navigation cards on Overview (jumps to other pages) */
+    .nav-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .nav-card {
+      display: flex; flex-direction: column; gap: 6px;
+      padding: 14px 16px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+      cursor: pointer; transition: border-color .15s ease, transform .15s ease;
+      position: relative; overflow: hidden;
+    }
+    .nav-card:hover {
+      border-color: var(--accent-orange); transform: translateY(-1px);
+    }
+    .nav-card::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      opacity: 0.35;
+    }
+    .nav-card .nc-eyebrow {
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--accent-orange); font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .nav-card .nc-title {
+      font-family: var(--font-sans); font-size: 15px; font-weight: 600;
+      color: var(--foreground);
+    }
+    .nav-card .nc-sub {
+      font-family: var(--font-sans); font-size: 11.5px;
+      color: var(--text-muted); line-height: 1.5;
+    }
+    .nav-card .nc-arrow {
+      font-family: var(--font-mono); font-size: 12px; color: var(--accent-orange);
+      align-self: flex-end; margin-top: auto;
+    }
+
+    /* ────── Delta chip ───────────────────────────────────── */
+    .delta {
+      display: inline-block; padding: 1px 5px; margin-left: 4px;
+      font-size: 9.5px; font-family: var(--font-mono);
+      font-weight: 600; border-radius: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+    .delta.up   { color: var(--accent-green); background: rgba(46,204,113,0.12); }
+    .delta.down { color: var(--accent-red);   background: rgba(255,90,95,0.12); }
+    .delta.flat { color: var(--text-muted);   background: var(--tint-soft); }
+
+    /* ────── Heatmap widget ──────────────────────────────── */
+    .heatmap {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 4px;
+    }
+    .heat-cell {
+      padding: 8px 10px; border-radius: 3px;
+      font-family: var(--font-mono); font-size: 11px;
+      display: flex; flex-direction: column; gap: 2px;
+      cursor: pointer; position: relative;
+      border: 1px solid transparent;
+      transition: transform .12s ease, border-color .12s ease;
+    }
+    .heat-cell:hover { transform: translateY(-1px); border-color: var(--border-bright); }
+    .heat-cell .hname { color: var(--foreground); font-weight: 600; font-size: 11.5px; }
+    .heat-cell .hsym  { color: var(--text-muted); font-size: 9.5px; }
+    .heat-cell .hval  { font-weight: 700; font-size: 13px; }
+    .heat-cell.adi { outline: 1.5px solid var(--accent-orange); }
+
+    /* ────── Detail pane (slides in from right) ──────────── */
+    .detail-overlay {
+      position: fixed; inset: 0; z-index: 150;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(2px);
+    }
+    .detail-pane {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: 460px; max-width: 95vw;
+      background: var(--card);
+      border-left: 1px solid var(--border-bright);
+      z-index: 151;
+      display: flex; flex-direction: column;
+      animation: slidein .15s ease-out;
+    }
+    @keyframes slidein {
+      from { transform: translateX(20px); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+    .detail-head {
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 12px;
+    }
+    .detail-head h3 {
+      margin: 0; font-family: var(--font-sans); font-size: 18px; font-weight: 700;
+    }
+    .detail-head .sub {
+      font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
+      margin-top: 2px; letter-spacing: 0.04em;
+    }
+    .detail-close {
+      background: transparent; border: 1px solid var(--border-bright);
+      color: var(--text-muted); width: 28px; height: 28px; border-radius: 4px;
+      cursor: pointer; font-size: 14px;
+    }
+    .detail-close:hover { color: var(--accent-orange); border-color: var(--accent-orange); }
+    .detail-body { padding: 14px 16px; overflow: auto; flex: 1; }
+    .detail-row {
+      display: flex; justify-content: space-between; padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono); font-size: 12px;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row .k {
+      color: var(--text-muted); text-transform: uppercase;
+      font-size: 10px; letter-spacing: 0.08em; font-weight: 600;
+    }
+    .detail-row .v { color: var(--foreground); font-weight: 600; }
+    .detail-row .v.warn { color: var(--accent-yellow); }
+    .detail-row .v.down { color: var(--accent-red); }
+    .detail-row .v.up   { color: var(--accent-green); }
+    .detail-section-label {
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--accent-orange); text-transform: uppercase;
+      letter-spacing: 0.14em; font-weight: 700;
+      margin: 14px 0 6px; padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .detail-section-label:first-child { padding-top: 0; border-top: none; margin-top: 0; }
+
+    /* Chart expanded overlay */
+    .chart-expanded-bg {
+      position: fixed; inset: 0; z-index: 90;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(3px);
+    }
+    .chart-expanded {
+      position: fixed; inset: 24px; z-index: 100;
+      background: var(--card); border: 1px solid var(--border-bright);
+      border-radius: 6px;
+      display: flex; flex-direction: column;
+      box-shadow: 0 20px 60px rgba(15,17,21,0.25);
+    }
+    .live-dot {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent-orange);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+    /* Main container */
+    .main-wrap { flex: 1; }
+    .main-inner {
+      max-width: 1600px; margin: 0 auto;
+      padding: 8px 6px 20px;
+    }
+
+    /* Status bar (footer) */
+    .status-bar {
+      height: 28px;
+      border-top: 1px solid var(--border);
+      background: var(--panel-header);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px;
+      font-size: 11px; color: var(--text-muted);
+    }
+    .status-bar .prompt { color: var(--accent-orange); margin-right: 6px; }
+
+    /* ════════════════════════════════════════════════════════════════
+       TUI panel, orange-accent header, gradient hairline on top
+       ════════════════════════════════════════════════════════════════ */
+    .tui-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .tui-panel::before {
+      content: "";
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      opacity: 0.4;
+    }
+    .tui-panel-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 9px 16px;
+      background: var(--panel-header);
+      border-bottom: 1px solid var(--border);
+      min-height: 36px;
+    }
+    .tui-panel-title {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--accent-orange);
+    }
+    .tui-panel-badge {
+      font-size: 10px; color: var(--text-muted); letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .tui-panel-body { padding: 18px; }
+    .tui-panel-body.pad-lg { padding: 22px 24px; }
+    .tui-panel-body.flush { padding: 0; }
+
+    /* Labeled divider */
+    .tui-divider-labeled {
+      display: flex; align-items: center; gap: 14px;
+      margin: 28px 0 14px;
+    }
+    .tui-divider-labeled::before,
+    .tui-divider-labeled::after {
+      content: ""; flex: 1; height: 1px; background: var(--border);
+    }
+    .tui-divider-label {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em;
+      color: var(--text-muted); font-weight: 600;
+    }
+
+    /* Section spacing */
+    .section { margin-bottom: 20px; }
+    .section:last-child { margin-bottom: 0; }
+
+    .page-header { margin-bottom: 18px; }
+    .page-eyebrow {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em;
+      color: var(--accent-orange); font-weight: 700; margin-bottom: 8px;
+    }
+    .page-title {
+      font-family: var(--font-sans);
+      font-size: 24px; font-weight: 700; letter-spacing: -0.01em;
+      color: var(--foreground); margin: 0;
+    }
+    .page-sub {
+      font-family: var(--font-sans);
+      margin: 10px 0 0; max-width: 760px;
+      font-size: 13.5px; color: var(--text-muted); line-height: 1.6;
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       Counters / metric cards (TUI counter pattern)
+       ════════════════════════════════════════════════════════════════ */
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+
+    .counter {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 10px 14px;
+      position: relative;
+      transition: border-color .15s ease, transform .15s ease;
+    }
+    .counter::before {
+      content: "";
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      opacity: 0.3;
+    }
+    .counter:hover { border-color: var(--border-bright); }
+    .counter-label {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--text-muted); margin-bottom: 8px; font-weight: 600;
+    }
+    .counter-value {
+      font-size: 22px; font-weight: 700; line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+      color: var(--foreground);
+    }
+    .counter-value.danger { color: var(--accent-red); }
+    .counter-sub {
+      font-size: 11px; color: var(--text-muted); margin-top: 8px;
+      letter-spacing: 0.02em;
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       Data tables
+       ════════════════════════════════════════════════════════════════ */
+    .data-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 11.5px; font-family: var(--font-mono);
+    }
+    .data-table thead th {
+      text-align: left; font-size: 9.5px; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-muted);
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border-bright);
+      font-weight: 600; white-space: nowrap;
+      background: var(--panel-header);
+      position: sticky; top: 0; z-index: 1;
+    }
+    .data-table thead th.right { text-align: right; }
+    .data-table tbody td {
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .data-table tbody td.right { text-align: right; }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:hover td { background: var(--tint-soft); }
+    .data-table tbody tr.row-adi td { background: rgba(214,50,46,0.05); color: var(--accent-red); font-weight: 600; }
+    .data-table tbody tr.row-adi:hover td { background: rgba(214,50,46,0.08); }
+    .data-table tbody tr.row-section td {
+      background: var(--panel-header);
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--text-muted); font-weight: 700;
+      padding: 8px 14px;
+    }
+    .data-table tbody tr.row-section:hover td { background: var(--panel-header); }
+
+    .danger { color: var(--accent-red); font-weight: 700; }
+    .muted  { color: var(--text-muted); }
+
+    /* ════════════════════════════════════════════════════════════════
+       Tier chip
+       ════════════════════════════════════════════════════════════════ */
+    .chip {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+      border: 1px solid var(--border-bright); border-radius: 3px;
+      color: var(--text-muted); background: var(--card);
+    }
+    .chip-large { color: var(--accent-green); border-color: rgba(15,157,88,0.4); background: rgba(15,157,88,0.06); }
+    .chip-mid   { color: var(--accent-yellow); border-color: rgba(217,119,6,0.4); background: rgba(217,119,6,0.06); }
+    .chip-small { color: var(--accent-blue); border-color: rgba(59,95,224,0.4); background: rgba(59,95,224,0.06); }
+    .chip-adi   { color: var(--accent-red); border-color: rgba(214,50,46,0.4); background: rgba(214,50,46,0.06); }
+
+    /* ════════════════════════════════════════════════════════════════
+       Verdict callout (TUI styled)
+       ════════════════════════════════════════════════════════════════ */
+    .verdict {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent-red);
+      border-radius: 4px;
+      padding: 18px 22px;
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--foreground);
+      position: relative;
+      font-family: var(--font-sans);
+      overflow: hidden;
+    }
+    .verdict::before {
+      content: "";
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-red), transparent);
+      opacity: 0.55;
+    }
+    .verdict-label {
+      display: inline-block; font-family: var(--font-mono);
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--accent-red); font-weight: 700; margin-right: 8px;
+    }
+    .verdict b { color: var(--accent-red); }
+    .verdict em { font-style: normal; color: var(--accent-orange); font-weight: 600; }
+
+    /* ─── Proof point callout ───────────────────────────────── */
+    .proof {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent-green);
+      border-radius: 4px;
+      padding: 18px 22px;
+      font-family: var(--font-sans);
+      font-size: 13.5px; line-height: 1.7;
+      color: var(--foreground);
+      position: relative;
+      overflow: hidden;
+    }
+    .proof::before {
+      content: "";
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-green), transparent);
+      opacity: 0.55;
+    }
+    .proof-label {
+      display: inline-block; font-family: var(--font-mono);
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--accent-green); font-weight: 700; margin-right: 8px;
+    }
+    .proof blockquote {
+      margin: 12px 0 6px 0; padding: 10px 14px;
+      border-left: 2px solid var(--accent-green);
+      font-style: italic; color: var(--foreground);
+      background: rgba(15,157,88,0.04);
+      font-size: 13px; line-height: 1.65;
+    }
+    .proof blockquote cite {
+      display: block; margin-top: 6px; font-style: normal;
+      font-family: var(--font-mono); font-size: 11px;
+      color: var(--text-muted); letter-spacing: 0.04em;
+    }
+    .proof b { color: var(--foreground); font-weight: 600; }
+    .proof .partners {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;
+    }
+    .proof .partner {
+      display: inline-flex; align-items: center;
+      padding: 2px 10px; font-size: 10px;
+      font-family: var(--font-mono); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      border: 1px solid var(--accent-green); border-radius: 3px;
+      color: var(--accent-green); background: rgba(15,157,88,0.06);
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       Meta strip (key-value pairs)
+       ════════════════════════════════════════════════════════════════ */
+    .meta-strip {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      font-size: 11px;
+    }
+    .meta-strip .kv {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 3px;
+    }
+    .meta-strip .kv .k {
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px;
+    }
+    .meta-strip .kv .v { color: var(--foreground); font-weight: 600; }
+
+    /* ════════════════════════════════════════════════════════════════
+       Reading guide list
+       ════════════════════════════════════════════════════════════════ */
+    .reading-list {
+      list-style: none; padding: 0; margin: 0;
+      display: grid; gap: 14px;
+    }
+    .reading-list li {
+      display: grid; grid-template-columns: 24px 1fr; gap: 12px;
+      font-family: var(--font-sans);
+      font-size: 13.5px; line-height: 1.6; color: var(--text-muted);
+    }
+    .reading-list .lead {
+      font-family: var(--font-mono);
+      color: var(--accent-orange); font-weight: 700;
+      text-align: right; padding-top: 1px;
+      font-size: 11px; letter-spacing: 0.06em;
+    }
+    .reading-list b { color: var(--foreground); font-weight: 600; }
+
+    /* Tier card grid */
+    .tier-card { padding: 20px; }
+    .tier-card-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .tier-rows { display: grid; gap: 9px; }
+    .tier-row {
+      display: grid; grid-template-columns: 1fr auto; gap: 12px;
+      align-items: baseline;
+      font-size: 12px;
+    }
+    .tier-row .k { color: var(--text-muted); }
+    .tier-row .v { color: var(--foreground); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    /* Inline code-style for ADI ref */
+    code.inline {
+      font-family: var(--font-mono); font-size: 11.5px;
+      background: var(--border); padding: 1px 6px; border-radius: 2px;
+      color: var(--foreground);
+    }
+
+    /* ────────── Responsive ────────── */
+    @media (max-width: 1024px) {
+      .grid-4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .grid-3 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .grid-4 { grid-template-columns: 1fr; }
+      .page-title { font-size: 20px; }
+      .counter-value { font-size: 22px; }
+      .nav-items { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <script>
+    // Apply persisted theme BEFORE React mounts to avoid flash
+    (function () {
+      try {
+        var t = localStorage.getItem('adi-l2-theme') || 'dark';
+        document.body.setAttribute('data-theme', t);
+      } catch(e) { document.body.setAttribute('data-theme', 'dark'); }
+    })();
+  </script>
+  <div class="shell" id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/html-to-image@1.11.13/dist/html-to-image.js"></script>
+
+  <script src="data.js"></script>
+
+  <script type="text/babel" data-presets="env, react">
+    const { useState } = React;
+    const D = window.ADI_L2_DATA;
+
+    /* ─── formatters ────────────────────────────────────── */
+    const fmtUSD = (v, dp=1) => {
+      if (v == null || v === '') return '-';
+      const n = Number(v);
+      if (Math.abs(n) >= 1e9) return `$${(n/1e9).toFixed(dp)}B`;
+      if (Math.abs(n) >= 1e6) return `$${(n/1e6).toFixed(dp)}M`;
+      if (Math.abs(n) >= 1e3) return `$${(n/1e3).toFixed(0)}K`;
+      return `$${n.toFixed(0)}`;
+    };
+    const fmtX   = (v, dp=2) => v == null ? '-' : `${Number(v).toFixed(dp)}×`;
+    const fmtPct = (v, dp=2) => v == null ? '-' : `${Number(v).toFixed(dp)}%`;
+    const fmtDelta = (v, dp=1) => {
+      if (v == null) return <span className="muted">-</span>;
+      const n = Number(v);
+      const positive = n > 0;
+      const big = Math.abs(n) > 50;
+      const color = positive ? 'var(--accent-green)' : 'var(--accent-red)';
+      return <span style={{ color, fontWeight: big ? 700 : 500 }}>{positive ? '+' : ''}{n.toFixed(dp)}%</span>;
+    };
+
+    /* ─── TUI primitives ────────────────────────────────── */
+    const TuiPanel = ({ title, badge, flush=false, padLg=false, children }) => (
+      <div className="tui-panel">
+        <div className="tui-panel-header">
+          <span className="tui-panel-title">{title}</span>
+          {badge && <span className="tui-panel-badge">{badge}</span>}
+        </div>
+        <div className={`tui-panel-body${flush ? ' flush' : ''}${padLg ? ' pad-lg' : ''}`}>{children}</div>
+      </div>
+    );
+
+    const Divider = ({ label }) => (
+      <div className="tui-divider-labeled">
+        {label && <span className="tui-divider-label">{label}</span>}
+      </div>
+    );
+
+    const Counter = ({ label, value, sub, danger }) => (
+      <div className="counter">
+        <div className="counter-label">{label}</div>
+        <div className={`counter-value${danger ? ' danger' : ''}`}>{value}</div>
+        {sub && <div className="counter-sub">{sub}</div>}
+      </div>
+    );
+
+    const TierChip = ({ tier }) => {
+      const map = { Large: 'chip-large', Mid: 'chip-mid', Small: 'chip-small', Micro: 'chip-small', ADI: 'chip-adi' };
+      return <span className={`chip ${map[tier] || ''}`}>{tier}</span>;
+    };
+
+    /* ─── Benchmark table ───────────────────────────────── */
+    const BenchmarkTable = ({ rows, adi, openDetail }) => {
+      const grouped = { Large: [], Mid: [], Small: [], Micro: [] };
+      rows.forEach(r => (grouped[r.tier] || grouped.Micro).push(r));
+      const handleClick = (r) => openDetail && openDetail(r);
+
+      const distLabel = {
+        airdrop:      'AIRDROP',
+        no_token:     'NO TOKEN',
+        token_swap:   'TOKEN SWAP',
+        fair_launch:  'FAIR LAUNCH',
+        private_only: 'PRIVATE',
+      };
+      const distColor = {
+        airdrop:      'var(--accent-green)',
+        no_token:     'var(--text-muted)',
+        token_swap:   'var(--accent-blue)',
+        fair_launch:  'var(--accent-cyan)',
+        private_only: 'var(--accent-red)',
+      };
+      const DistChip = ({ kind }) => kind ? (
+        <span style={{
+          display: 'inline-block', padding: '1px 6px', fontSize: 9,
+          fontFamily: 'var(--font-mono)', fontWeight: 600, letterSpacing: '0.08em',
+          border: `1px solid ${distColor[kind]}`, borderRadius: 2,
+          color: distColor[kind], background: 'transparent',
+        }}>{distLabel[kind]}</span>
+      ) : null;
+
+      const renderRow = (r, isAdi=false) => {
+        const tvl = isAdi ? r.tvl_with_ddsc : r.tvl;
+        const mcap = isAdi ? r.token_mcap : (r.chain_mcap || r.token_mcap);
+        const fdv = r.fdv_usd;
+        const dex = r.dex_v24;
+        const mcaptvl = isAdi ? r.mcaptvl_with_ddsc : ((mcap != null && tvl > 0) ? mcap/tvl : null);
+        const fdvtvl  = (fdv != null && tvl > 0) ? fdv/tvl : null;
+        const voltvl = (dex != null && tvl > 0) ? (dex/tvl*100) : null;
+        return (
+          <tr key={r.name + (isAdi ? '-adi' : '')}
+              className={isAdi ? 'row-adi' : ''}
+              onClick={() => handleClick(isAdi ? {...adi, name: 'ADI Chain', symbol: 'ADI'} : r)}
+              style={{ cursor: 'pointer' }}>
+            <td>{r.name}</td>
+            <td className="muted">{r.symbol || '-'}</td>
+            <td><DistChip kind={r.distribution_model} /></td>
+            <td className="right">{fmtUSD(tvl)}</td>
+            <td className="right">{fmtUSD(mcap)}</td>
+            <td className="right">{fmtUSD(fdv)}</td>
+            <td className="right">{mcaptvl == null ? '-' :
+              <span className={mcaptvl > 50 ? 'danger' : ''}>{fmtX(mcaptvl)}</span>}</td>
+            <td className="right">{fdvtvl == null ? '-' : <span className={fdvtvl > 100 ? 'danger' : ''}>{fmtX(fdvtvl)}</span>}</td>
+            <td className="right">{r.tx_per_day == null ? '-' : Number(r.tx_per_day).toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+            <td className="right">{r.active_wallets_per_day == null ? '-' : Number(r.active_wallets_per_day).toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+            <td className="right">{fmtUSD(dex, 2)}</td>
+            <td className="right">{voltvl == null ? '-' :
+              <span className={voltvl === 0 ? 'danger' : ''}>{fmtPct(voltvl)}</span>}</td>
+          </tr>
+        );
+      };
+
+      return (
+        <div style={{ maxHeight: 620, overflow: 'auto' }}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Chain</th>
+                <th>Token</th>
+                <th>Distribution</th>
+                <th className="right">TVL</th>
+                <th className="right">Mcap</th>
+                <th className="right">FDV</th>
+                <th className="right">Mcap / TVL</th>
+                <th className="right">FDV / TVL</th>
+                <th className="right">Tx / day</th>
+                <th className="right">Active wallets</th>
+                <th className="right">24h DEX</th>
+                <th className="right">Vol / TVL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="row-section"><td colSpan="12">// ADI Chain · audit subject</td></tr>
+              {renderRow(adi, true)}
+              {['Large','Mid','Small','Micro'].map(tier => (
+                <React.Fragment key={tier}>
+                  <tr className="row-section"><td colSpan="12">// {tier} L2s · {grouped[tier].length} chains</td></tr>
+                  {grouped[tier].map(r => renderRow(r))}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    };
+
+    /* ─── Tier benchmark cards ──────────────────────────── */
+    const TierBenchmarks = ({ summary }) => (
+      <div className="grid-3">
+        {['Large','Mid','Small'].map(t => {
+          const s = summary[t];
+          return (
+            <div key={t} className="tui-panel">
+              <div className="tui-panel-header">
+                <span className="tui-panel-title">{t} L2 cohort</span>
+                <span className="tui-panel-badge">N = {s.n}</span>
+              </div>
+              <div className="tui-panel-body">
+                <div className="tier-card-head">
+                  <TierChip tier={t} />
+                  <span className="muted" style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Median values</span>
+                </div>
+                <div className="tier-rows">
+                  <div className="tier-row"><span className="k">TVL</span><span className="v">{fmtUSD(s.tvl_med)}</span></div>
+                  <div className="tier-row"><span className="k">Token Mcap</span><span className="v">{fmtUSD(s.mcap_med)}</span></div>
+                  <div className="tier-row"><span className="k">24h DEX Volume</span><span className="v">{fmtUSD(s.dex_v24_med, 2)}</span></div>
+                  <div className="tier-row"><span className="k">Mcap / TVL</span><span className="v">{fmtX(s.mcap_tvl_med)}</span></div>
+                  <div className="tier-row"><span className="k">Vol / TVL</span><span className="v">{fmtPct(s.vol_tvl_pct_med)}</span></div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+
+    /* ─── Mcap vs TVL scatter, wrapped in ChartWrapper ───── */
+    const ScatterMcapVsTvl = ({ rows, adi, openDetail, metric='mcap' }) => {
+      const [hover, setHover] = React.useState(null);
+      const yKey = metric === 'fdv' ? 'fdv_usd' : 'chain_mcap';
+      const yLabel = metric === 'fdv' ? 'FDV (LOG SCALE)' : 'MCAP (LOG SCALE)';
+      const refLabel = metric === 'fdv' ? 'FDV = TVL' : 'Mcap = TVL';
+      const W = 960, H = 440, P = { l: 60, r: 28, t: 22, b: 40 };
+      const inner = { w: W - P.l - P.r, h: H - P.t - P.b };
+
+      // Build point set: every L2 with both Mcap and TVL > 0.
+      // ADI now uses on-chain TVL (incl. DDSC) for consistency with the rest
+      // of the dashboard. Audit-view ($2M Uniswap-only) is shown as a ghost
+      // dot.
+      const distColor = {
+        airdrop:      'var(--accent-green)',
+        no_token:     'var(--text-muted)',  // (won't appear, no Mcap)
+        token_swap:   'var(--accent-blue)',
+        fair_launch:  'var(--accent-cyan)',
+        private_only: 'var(--accent-orange)',
+      };
+
+      const pts = rows.filter(r => r.tvl > 0 && (r[yKey]||0) > 0).map(r => ({
+        row: r,
+        name: r.name,
+        sym: r.symbol,
+        x: r.tvl,
+        y: r[yKey],
+        mt: r[yKey] / r.tvl,
+        dist: r.distribution_model,
+        color: distColor[r.distribution_model] || 'var(--text-muted)',
+      }));
+      // ADI: on-chain truth point
+      const adiY = metric === 'fdv' ? adi.fdv_usd : adi.token_mcap;
+      const adiYGhost = metric === 'fdv' ? adi.fdv_usd : adi.token_mcap;
+      pts.push({
+        row: { ...adi, name: 'ADI Chain', symbol: 'ADI' },
+        name: 'ADI Chain', sym: 'ADI',
+        x: adi.tvl_with_ddsc, y: adiY,
+        mt: adiY / adi.tvl_with_ddsc,
+        dist: 'private_only',
+        color: 'var(--accent-red)',
+        adi: true,
+      });
+      // ADI: DefiLlama-view ghost point ($2M Uniswap LP only)
+      const adiGhost = {
+        row: { ...adi, name: 'ADI Chain (DefiLlama view)', symbol: 'ADI' },
+        name: 'ADI (DefiLlama view)', sym: '',
+        x: adi.tvl_defillama_visible, y: adiYGhost,
+        mt: adiYGhost / adi.tvl_defillama_visible,
+        dist: 'private_only',
+        color: 'var(--accent-red)',
+        ghost: true,
+      };
+
+      const xs = pts.map(p => Math.log10(p.x)).concat([Math.log10(adiGhost.x)]);
+      const ys = pts.map(p => Math.log10(p.y));
+      const xMin = Math.floor(Math.min(...xs));
+      const xMax = Math.ceil(Math.max(...xs));
+      const yMin = Math.floor(Math.min(...ys));
+      const yMax = Math.ceil(Math.max(...ys));
+      const sx = v => P.l + (Math.log10(v) - xMin) / (xMax - xMin) * inner.w;
+      const sy = v => P.t + inner.h - (Math.log10(v) - yMin) / (yMax - yMin) * inner.h;
+
+      // Size scale: radius proportional to log(Mcap), clamped 4-12
+      const mcapLogs = pts.map(p => Math.log10(p.y));
+      const mcMin = Math.min(...mcapLogs), mcMax = Math.max(...mcapLogs);
+      const radius = (mcap, isAdi) => {
+        if (isAdi) return 9;
+        const t = (Math.log10(mcap) - mcMin) / (mcMax - mcMin || 1);
+        return 4 + t * 7;
+      };
+
+      const xTicks = []; for (let i = xMin; i <= xMax; i++) xTicks.push(i);
+      const yTicks = []; for (let i = yMin; i <= yMax; i++) yTicks.push(i);
+      const tickFmt = t => t >= 9 ? `$${10**(t-9)}B` : t >= 6 ? `$${10**(t-6)}M` : `$${10**(t-3)}K`;
+
+      // Build healthy band polygon (Mcap/TVL between 0.3x and 5x)
+      const bandPts = [
+        { x: 10**xMin, y: 10**xMin * 0.3 },
+        { x: 10**xMax, y: 10**xMax * 0.3 },
+        { x: 10**xMax, y: 10**xMax * 5 },
+        { x: 10**xMin, y: 10**xMin * 5 },
+      ];
+      const bandPath = bandPts.map((p, i) => `${i===0?'M':'L'} ${sx(p.x).toFixed(1)} ${sy(Math.max(p.y, 10**yMin)).toFixed(1)}`).join(' ') + ' Z';
+
+      // Always label these chains for orientation
+      const ALWAYS_LABEL = new Set(['Base','Arbitrum','OP Mainnet','Mantle','World Chain','ZKsync Era','Linea','MegaETH','IOTA EVM','Manta','Sophon','Scroll','Blast','Movement']);
+
+      const svg = (
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
+             style={{ display: 'block', width: '100%', height: 'auto', cursor: hover ? 'pointer' : 'default' }}>
+          {/* Healthy band */}
+          <path d={bandPath} fill="rgba(46,204,113,0.07)" stroke="rgba(46,204,113,0.18)" strokeDasharray="2 4" />
+          <text x={sx(10**(xMin + (xMax-xMin)*0.05))} y={sy(10**(xMin + (xMax-xMin)*0.05) * 5) - 4}
+                fontSize="9" fill="var(--accent-green)" fontFamily="var(--font-mono)" fontStyle="italic" opacity="0.7">
+            healthy band (Mcap/TVL 0.3-5×)
+          </text>
+
+          {/* Gridlines */}
+          {yTicks.map(t => (
+            <line key={`gy${t}`} x1={P.l} y1={sy(10**t)} x2={P.l + inner.w} y2={sy(10**t)}
+                  stroke="var(--border)" strokeDasharray="3 3" />
+          ))}
+          {xTicks.map(t => (
+            <line key={`gx${t}`} x1={sx(10**t)} y1={P.t} x2={sx(10**t)} y2={P.t + inner.h}
+                  stroke="var(--tint-soft)" strokeDasharray="3 3" />
+          ))}
+
+          {/* Axis lines */}
+          <line x1={P.l} y1={P.t} x2={P.l} y2={P.t + inner.h} stroke="var(--border-bright)" />
+          <line x1={P.l} y1={P.t + inner.h} x2={P.l + inner.w} y2={P.t + inner.h} stroke="var(--border-bright)" />
+
+          {/* Y tick labels */}
+          {yTicks.map(t => (
+            <text key={`yl${t}`} x={P.l - 8} y={sy(10**t) + 3} fontSize="10" textAnchor="end"
+                  fill="var(--text-muted)" fontFamily="var(--font-mono)">{tickFmt(t)}</text>
+          ))}
+          {/* X tick labels */}
+          {xTicks.map(t => (
+            <text key={`xl${t}`} x={sx(10**t)} y={P.t + inner.h + 18} fontSize="10" textAnchor="middle"
+                  fill="var(--text-muted)" fontFamily="var(--font-mono)">{tickFmt(t)}</text>
+          ))}
+          {/* Axis titles */}
+          <text x={P.l + inner.w/2} y={H - 4} fontSize="10" textAnchor="middle"
+                fill="var(--text-muted)" fontFamily="var(--font-mono)" letterSpacing="0.1em">TVL (LOG SCALE)</text>
+          <text x={14} y={P.t + inner.h/2} fontSize="10" textAnchor="middle"
+                fill="var(--text-muted)" fontFamily="var(--font-mono)" letterSpacing="0.1em"
+                transform={`rotate(-90 14 ${P.t + inner.h/2})`}>{yLabel}</text>
+
+          {/* Reference line: y = x */}
+          <line x1={sx(10**xMin)} y1={sy(10**xMin)} x2={sx(10**xMax)} y2={sy(10**xMax)}
+                stroke="var(--tint-strong)" strokeDasharray="4 4" />
+          <text x={sx(10**(xMin + (xMax-xMin)*0.88))} y={sy(10**(xMin + (xMax-xMin)*0.88)) - 6}
+                fontSize="10" fill="var(--text-muted)" textAnchor="middle" fontStyle="italic"
+                fontFamily="var(--font-mono)">{refLabel}</text>
+
+          {/* ADI ghost point (DefiLlama view), drawn first so on-chain sits on top */}
+          {(() => {
+            const cx = sx(adiGhost.x), cy = sy(adiGhost.y);
+            return (
+              <g style={{ cursor: 'pointer' }}
+                 onMouseEnter={(e) => setHover({ p: adiGhost, x: cx, y: cy })}
+                 onMouseLeave={() => setHover(null)}
+                 onClick={() => openDetail && openDetail(adiGhost.row)}>
+                <circle cx={cx} cy={cy} r="7" fill="none" stroke="var(--accent-red)" strokeWidth="1.5" strokeDasharray="2 2" opacity="0.7" />
+              </g>
+            );
+          })()}
+          {/* Connecting line ADI ghost → ADI on-chain */}
+          {(() => {
+            const adiPt = pts.find(p => p.adi);
+            if (!adiPt) return null;
+            return <line x1={sx(adiGhost.x)} y1={sy(adiGhost.y)} x2={sx(adiPt.x)} y2={sy(adiPt.y)}
+                          stroke="var(--accent-red)" strokeDasharray="2 2" opacity="0.5" />;
+          })()}
+
+          {/* Points */}
+          {pts.map((p, i) => {
+            const cx = sx(p.x), cy = sy(p.y);
+            const r = radius(p.y, p.adi);
+            const nearRight = cx > P.l + inner.w - 90;
+            const showLabel = p.adi || ALWAYS_LABEL.has(p.name);
+            return (
+              <g key={`${p.name}-${i}`}
+                 style={{ cursor: 'pointer' }}
+                 onMouseEnter={() => setHover({ p, x: cx, y: cy })}
+                 onMouseLeave={() => setHover(null)}
+                 onClick={() => openDetail && openDetail(p.row)}>
+                <circle cx={cx} cy={cy} r={r}
+                        fill={p.color} fillOpacity={p.adi ? 1 : 0.72}
+                        stroke={p.adi ? 'var(--accent-red)' : 'var(--card)'}
+                        strokeWidth={p.adi ? 2 : 1} />
+                {showLabel && (
+                  <text x={nearRight ? cx - r - 4 : cx + r + 4} y={cy + 3} fontSize="10.5"
+                        fill={p.adi ? 'var(--accent-red)' : 'var(--foreground)'}
+                        fontWeight={p.adi ? 700 : 500}
+                        fontFamily="var(--font-mono)"
+                        textAnchor={nearRight ? 'end' : 'start'}>{p.name}</text>
+                )}
+              </g>
+            );
+          })}
+
+          {/* Hover tooltip */}
+          {hover && (() => {
+            const { p, x, y } = hover;
+            const labelLines = [
+              p.name,
+              `TVL ${fmtUSD(p.x)}  ·  Mcap ${fmtUSD(p.y)}`,
+              `M/T ${fmtX(p.mt, 2)}  ·  ${p.dist || '-'}${p.ghost ? '  (DefiLlama-only view)' : ''}`,
+            ];
+            const tipW = 230, tipH = 52;
+            const flipX = x > W - tipW - 10;
+            const tx = flipX ? x - tipW - 10 : x + 10;
+            const ty = Math.max(P.t + 4, y - tipH - 6);
+            return (
+              <g pointerEvents="none">
+                <rect x={tx} y={ty} width={tipW} height={tipH} rx="3"
+                      fill="var(--card)" stroke="var(--border-bright)" />
+                {labelLines.map((line, k) => (
+                  <text key={k} x={tx + 8} y={ty + 14 + k * 13}
+                        fontSize={k === 0 ? 11.5 : 10}
+                        fontWeight={k === 0 ? 700 : 500}
+                        fill={k === 0 ? 'var(--accent-orange)' : 'var(--foreground)'}
+                        fontFamily="var(--font-mono)">{line}</text>
+                ))}
+              </g>
+            );
+          })()}
+        </svg>
+      );
+
+      const legend = (
+        <div className="chart-footer">
+          <span className="legend-item"><span className="legend-sw" style={{ background: 'var(--accent-green)' }} />Airdrop L2</span>
+          <span className="legend-item"><span className="legend-sw" style={{ background: 'var(--accent-blue)' }} />Token swap</span>
+          <span className="legend-item"><span className="legend-sw" style={{ background: 'var(--accent-cyan)' }} />Fair launch</span>
+          <span className="legend-item"><span className="legend-sw" style={{ background: 'var(--accent-red)' }} />ADI (on-chain)</span>
+          <span className="legend-item">
+            <svg width="14" height="10"><circle cx="7" cy="5" r="4" fill="none" stroke="var(--accent-red)" strokeWidth="1.5" strokeDasharray="2 2" /></svg>
+            ADI (DefiLlama view)
+          </span>
+          <span className="legend-item">
+            <span className="legend-sw" style={{ background: 'rgba(46,204,113,0.18)', border: '1px dashed rgba(46,204,113,0.5)' }} />
+            Healthy band 0.3-5×
+          </span>
+          <span className="legend-item" style={{ marginLeft: 'auto' }}>
+            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)' }}>dot size ∝ Mcap · click for detail</span>
+          </span>
+        </div>
+      );
+
+      return (
+        <ChartWrapper screenshotName="adi-mcap-vs-tvl-scatter" legend={legend} note={null}>
+          {svg}
+        </ChartWrapper>
+      );
+    };
+
+    /* ─── Icons for chart toolbar ──────────────────────── */
+    const IconCamera = () => (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+        <circle cx="12" cy="13" r="4" />
+      </svg>
+    );
+    const IconExpand = () => (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
+        <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+      </svg>
+    );
+    const IconCollapse = () => (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" />
+        <line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" />
+      </svg>
+    );
+
+    /* ─── Reusable ChartWrapper, SDK pattern ──────────── */
+    // Mirrors @datumlabs/dashboard-kit/src/components/ChartWrapper.tsx:
+    //   - Toolbar (left: optional time pills, right: camera + expand icons)
+    //   - Chart body with faint watermark behind content
+    //   - Footer with legend chips
+    //   - Optional "Read:" interpretation note
+    //   - Expanded mode (fullscreen overlay)
+    const ChartWrapper = ({
+      timeRanges,        // [7,30,90] or null
+      activeRange,
+      onRangeChange,
+      watermarkText = 'ADI · L2 BENCHMARK',
+      screenshotName,
+      legend,            // React node (legend chips)
+      note,              // React node (read note)
+      children,          // chart SVG
+    }) => {
+      const [expanded, setExpanded] = useState(false);
+      const ref = React.useRef(null);
+
+      const screenshot = async () => {
+        if (!ref.current || !window.htmlToImage) return;
+        try {
+          const dataUrl = await window.htmlToImage.toPng(ref.current, {
+            backgroundColor: getComputedStyle(document.body).backgroundColor,
+            pixelRatio: 2, cacheBust: true,
+          });
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = `${screenshotName || 'chart'}-${D.asOf}.png`;
+          a.click();
+        } catch (e) { console.error('Chart screenshot failed:', e); }
+      };
+
+      const toolbar = (
+        <div className="chart-toolbar">
+          <div className="time-pills">
+            {(timeRanges || []).map(r => (
+              <button key={r} className={`time-pill ${activeRange === r ? 'active' : ''}`} onClick={() => onRangeChange?.(r)}>
+                {r}D
+              </button>
+            ))}
+          </div>
+          <div className="chart-actions">
+            <button className="chart-action-btn" onClick={screenshot} title="Download chart as PNG"><IconCamera /></button>
+            <button className="chart-action-btn" onClick={() => setExpanded(v => !v)} title={expanded ? 'Collapse chart' : 'Expand chart'}>
+              {expanded ? <IconCollapse /> : <IconExpand />}
+            </button>
+          </div>
+        </div>
+      );
+
+      const body = (
+        <div className="chart-canvas" ref={ref} style={{ padding: '18px 14px 6px', position: 'relative', flex: expanded ? 1 : 'unset' }}>
+          {watermarkText && <div className="chart-watermark" style={{ fontSize: expanded ? 96 : 64 }}>{watermarkText}</div>}
+          {children}
+        </div>
+      );
+
+      if (expanded) {
+        return (
+          <>
+            <div className="chart-expanded-bg" onClick={() => setExpanded(false)} />
+            <div className="chart-expanded">
+              {toolbar}
+              {body}
+              {legend}
+              {note}
+            </div>
+          </>
+        );
+      }
+      return (
+        <>
+          {toolbar}
+          {body}
+          {legend}
+          {note}
+        </>
+      );
+    };
+
+    /* ─── Mcap/TVL trend chart, SDK ChartWrapper aesthetic ─ */
+    const McapTvlTrend = ({ history, adi }) => {
+      const TIME_RANGES = [7, 30, 90];
+      const [range, setRange] = useState(90);
+
+      // Slice the window
+      const N_full = history.days.length;
+      const N = Math.min(range, N_full);
+      const sliceFrom = N_full - N;
+      const days = history.days.slice(sliceFrom);
+      const bands = {
+        Large: history.tierBands.Large.slice(sliceFrom),
+        Mid:   history.tierBands.Mid.slice(sliceFrom),
+        Small: history.tierBands.Small.slice(sliceFrom),
+      };
+      const adiSeries = history.adi.slice(sliceFrom);
+
+      // Collect Y range
+      const allY = [];
+      ['Large','Mid','Small'].forEach(t => bands[t].forEach(b => {
+        if (b.p25 != null && b.p25 > 0) allY.push(b.p25);
+        if (b.p75 != null) allY.push(b.p75);
+      }));
+      adiSeries.forEach(v => v != null && allY.push(v));
+      const yLogMin = Math.floor(Math.log10(Math.max(0.05, Math.min(...allY))));
+      const yLogMax = Math.ceil(Math.log10(Math.max(...allY)));
+
+      // Geometry, chart area, with right gutter for endpoint labels
+      const W = 980, H = 360;
+      const P = { l: 56, r: 96, t: 18, b: 36 };
+      const inner = { w: W - P.l - P.r, h: H - P.t - P.b };
+      const sx = i => P.l + (N === 1 ? 0 : (i / (N - 1)) * inner.w);
+      const sy = v => P.t + inner.h - (Math.log10(v) - yLogMin) / (yLogMax - yLogMin) * inner.h;
+
+      const tierStyle = {
+        Large: { col: 'var(--accent-green)',  rgb: '15,157,88',  label: 'Large L2' },
+        Mid:   { col: 'var(--accent-yellow)', rgb: '217,119,6',  label: 'Mid L2'   },
+        Small: { col: 'var(--accent-blue)',   rgb: '59,95,224',  label: 'Small L2' },
+      };
+
+      // Build smooth paths via simple polyline
+      const lineFromPoints = pts => pts.map((p, i) => `${i===0?'M':'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ');
+      const buildLine = arr => {
+        const pts = arr.map((b, i) => b.med != null ? { x: sx(i), y: sy(b.med) } : null).filter(Boolean);
+        return lineFromPoints(pts);
+      };
+      const buildBand = arr => {
+        const top = arr.map((b, i) => b.p75 != null ? { x: sx(i), y: sy(b.p75) } : null).filter(Boolean);
+        const bot = arr.map((b, i) => b.p25 != null ? { x: sx(i), y: sy(b.p25) } : null).filter(Boolean).reverse();
+        if (!top.length || !bot.length) return '';
+        return [...top, ...bot].map((p, i) => `${i===0?'M':'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ') + ' Z';
+      };
+      const adiPathPts = adiSeries.map((v, i) => v != null ? { x: sx(i), y: sy(v) } : null).filter(Boolean);
+      const adiPath = lineFromPoints(adiPathPts);
+
+      // Y ticks
+      const yTicks = [];
+      for (let i = yLogMin; i <= yLogMax; i++) yTicks.push(i);
+
+      // X ticks, show 4-5 labels evenly spaced
+      const nXTicks = Math.min(5, N);
+      const xTickIdxs = Array.from({ length: nXTicks }, (_, k) => Math.round((k / (nXTicks-1)) * (N-1)));
+      const dateFmt = ts => {
+        const d = new Date(ts * 1000);
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        return `${months[d.getMonth()]} ${d.getDate()}`;
+      };
+      const yFmt = pow => {
+        const v = 10**pow;
+        if (v >= 100) return `${v.toFixed(0)}×`;
+        if (v >= 10)  return `${v.toFixed(0)}×`;
+        if (v >= 1)   return `${v.toFixed(1)}×`;
+        return `${v.toFixed(2)}×`;
+      };
+
+      // Endpoint values for line labels
+      const lastVal = arr => {
+        for (let i = arr.length - 1; i >= 0; i--) if (arr[i] != null) return arr[i];
+        return null;
+      };
+      const lastMed = {
+        Large: lastVal(bands.Large.map(b => b?.med)),
+        Mid:   lastVal(bands.Mid.map(b => b?.med)),
+        Small: lastVal(bands.Small.map(b => b?.med)),
+      };
+      const lastAdi = lastVal(adiSeries);
+
+      // Chart SVG
+      const renderSvg = (height = H) => (
+        <svg viewBox={`0 0 ${W} ${height}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block', width: '100%', height: 'auto' }}>
+          <defs>
+            {['Large','Mid','Small'].map(t => (
+              <linearGradient key={`grad-${t}`} id={`grad-${t}-${range}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stopColor={tierStyle[t].col} stopOpacity="0.28" />
+                <stop offset="100%" stopColor={tierStyle[t].col} stopOpacity="0.02" />
+              </linearGradient>
+            ))}
+          </defs>
+
+          {/* Gridlines, recharts CartesianGrid 3,3 dashed */}
+          {yTicks.map(t => (
+            <line key={`gy${t}`} x1={P.l} y1={sy(10**t)} x2={P.l + inner.w} y2={sy(10**t)}
+                  stroke="var(--border)" strokeDasharray="3 3" />
+          ))}
+          {xTickIdxs.map(i => (
+            <line key={`gx${i}`} x1={sx(i)} y1={P.t} x2={sx(i)} y2={P.t + inner.h}
+                  stroke="var(--tint-soft)" strokeDasharray="3 3" />
+          ))}
+
+          {/* Axis lines, left + bottom, thin */}
+          <line x1={P.l} y1={P.t} x2={P.l} y2={P.t + inner.h} stroke="var(--border-bright)" />
+          <line x1={P.l} y1={P.t + inner.h} x2={P.l + inner.w} y2={P.t + inner.h} stroke="var(--border-bright)" />
+
+          {/* Y tick labels */}
+          {yTicks.map(t => (
+            <text key={`yl${t}`} x={P.l - 8} y={sy(10**t) + 3} fontSize="10" textAnchor="end"
+                  fill="var(--text-muted)" fontFamily="var(--font-mono)">{yFmt(t)}</text>
+          ))}
+          {/* X tick labels */}
+          {xTickIdxs.map(i => (
+            <text key={`xl${i}`} x={sx(i)} y={P.t + inner.h + 18} fontSize="10" textAnchor="middle"
+                  fill="var(--text-muted)" fontFamily="var(--font-mono)">{dateFmt(days[i])}</text>
+          ))}
+
+          {/* Bands first (back), then lines (front) */}
+          {['Small','Mid','Large'].map(t => {
+            const d = buildBand(bands[t]);
+            return d ? <path key={`band-${t}`} d={d} fill={`url(#grad-${t}-${range})`} stroke="none" /> : null;
+          })}
+          {['Small','Mid','Large'].map(t => (
+            <path key={`med-${t}`} d={buildLine(bands[t])} stroke={tierStyle[t].col} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          ))}
+
+          {/* Endpoint labels for tier medians (right of chart) */}
+          {['Large','Mid','Small'].map(t => {
+            if (lastMed[t] == null) return null;
+            const cy = sy(lastMed[t]);
+            return (
+              <g key={`endlbl-${t}`}>
+                <line x1={P.l + inner.w} y1={cy} x2={P.l + inner.w + 6} y2={cy} stroke={tierStyle[t].col} strokeWidth="1.5" />
+                <text x={P.l + inner.w + 10} y={cy + 3} fontSize="10.5" fill={tierStyle[t].col}
+                      fontFamily="var(--font-mono)" fontWeight="600">
+                  {tierStyle[t].label}
+                </text>
+                <text x={P.l + inner.w + 10} y={cy + 16} fontSize="10" fill="var(--text-muted)" fontFamily="var(--font-mono)">
+                  {fmtX(lastMed[t])}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* ADI line, bold red, drawn last (top of stack) */}
+          <path d={adiPath} stroke="var(--accent-red)" strokeWidth="2.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          {adiPathPts.length > 0 && (
+            <g>
+              <circle cx={adiPathPts[adiPathPts.length-1].x} cy={adiPathPts[adiPathPts.length-1].y} r="4.5"
+                      fill="var(--accent-red)" stroke="var(--card)" strokeWidth="2" />
+              <line x1={P.l + inner.w} y1={adiPathPts[adiPathPts.length-1].y} x2={P.l + inner.w + 6} y2={adiPathPts[adiPathPts.length-1].y} stroke="var(--accent-red)" strokeWidth="1.5" />
+              <text x={P.l + inner.w + 10} y={adiPathPts[adiPathPts.length-1].y + 3} fontSize="10.5"
+                    fill="var(--accent-red)" fontFamily="var(--font-mono)" fontWeight="700">ADI</text>
+              <text x={P.l + inner.w + 10} y={adiPathPts[adiPathPts.length-1].y + 16} fontSize="10"
+                    fill="var(--accent-red)" fontFamily="var(--font-mono)" fontWeight="600">{fmtX(lastAdi, 0)}</text>
+            </g>
+          )}
+        </svg>
+      );
+
+      const legend = (
+        <div className="chart-footer">
+          {['Large','Mid','Small'].map(t => (
+            <span key={t} className="legend-item">
+              <span className="legend-sw" style={{ background: tierStyle[t].col }} />
+              {tierStyle[t].label} median
+            </span>
+          ))}
+          <span className="legend-item">
+            <span className="legend-sw" style={{ background: 'var(--accent-red)' }} />
+            ADI Chain
+          </span>
+          <span className="legend-item" style={{ marginLeft: 'auto' }}>
+            <span className="legend-band" style={{ background: 'rgba(15,157,88,0.16)' }} />
+            Shaded = P25–P75 cohort spread
+          </span>
+        </div>
+      );
+
+      const adiOnChain = (D.adi && D.adi.mcaptvl_with_ddsc) ? D.adi.mcaptvl_with_ddsc : null;
+      const note = null;
+
+      return (
+        <ChartWrapper
+          timeRanges={TIME_RANGES} activeRange={range} onRangeChange={setRange}
+          screenshotName={`adi-mcap-tvl-trend-${range}d`}
+          legend={legend} note={note}
+        >
+          {renderSvg(H)}
+        </ChartWrapper>
+      );
+    };
+
+    /* ─── App shell ─────────────────────────────────────── */
+    const NAV = [
+      { id: 'overview', label: 'Overview',    hotkey: '1' },
+      { id: 'scatter',  label: 'Charts',      hotkey: '2' },
+      { id: 'table',    label: 'L2 Universe', hotkey: '3' },
+      { id: 'report',   label: 'Report',      hotkey: '4' },
+    ];
+
+    /* ─── Command palette ────────────────────────────────── */
+    const COMMANDS = [
+      { id: 'go-overview', label: 'Go: Overview',          shortcut: '1', action: (set) => set('overview') },
+      { id: 'go-scatter',  label: 'Go: Charts',            shortcut: '2', action: (set) => set('scatter') },
+      { id: 'go-table',    label: 'Go: L2 Universe table', shortcut: '3', action: (set) => set('table') },
+      { id: 'go-report',   label: 'Go: Report',            shortcut: '4', action: (set) => set('report') },
+      { id: 'filter-airdrop',     label: 'Filter: Airdrop L2s only',     shortcut: 'F1', action: (_set, ctx) => ctx?.setFilter?.('airdrop') },
+      { id: 'filter-non-airdrop', label: 'Filter: Non-airdrop L2s only', shortcut: 'F2', action: (_set, ctx) => ctx?.setFilter?.('non-airdrop') },
+      { id: 'filter-no-token',    label: 'Filter: No-token L2s only',    shortcut: 'F3', action: (_set, ctx) => ctx?.setFilter?.('no_token') },
+      { id: 'filter-all',         label: 'Filter: Show all L2s',         shortcut: 'F4', action: (_set, ctx) => ctx?.setFilter?.('all') },
+      { id: 'theme',       label: 'Toggle dark / light mode', shortcut: 'T', action: (_set, ctx) => ctx?.toggleTheme?.() },
+      { id: 'refresh',     label: 'Refresh data',          shortcut: 'R', action: () => window.location.reload() },
+      { id: 'github',      label: 'Open GitHub repo',      shortcut: '↗', action: () => window.open('https://github.com/surgencelab/adil2benchmark','_blank') },
+      { id: 'rpc',         label: 'Open ADI RPC explorer', shortcut: '↗', action: () => window.open('https://explorer.adifoundation.ai','_blank') },
+    ];
+
+    function CommandPalette({ open, onClose, setActive, ctx }) {
+      const [q, setQ] = useState('');
+      const [idx, setIdx] = useState(0);
+      const inputRef = React.useRef(null);
+      React.useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 50); }, [open]);
+      if (!open) return null;
+      const filtered = COMMANDS.filter(c => c.label.toLowerCase().includes(q.toLowerCase()));
+      const onKey = (e) => {
+        if (e.key === 'Escape') return onClose();
+        if (e.key === 'ArrowDown') { e.preventDefault(); setIdx(i => Math.min(i+1, filtered.length-1)); }
+        if (e.key === 'ArrowUp')   { e.preventDefault(); setIdx(i => Math.max(i-1, 0)); }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const cmd = filtered[idx];
+          if (cmd) { cmd.action(setActive, ctx); onClose(); }
+        }
+      };
+      return (
+        <div className="cmd-overlay" onClick={onClose}>
+          <div className="cmd-box" onClick={e => e.stopPropagation()}>
+            <input ref={inputRef} className="cmd-input"
+                   placeholder="Type a command or search..."
+                   value={q} onChange={e => { setQ(e.target.value); setIdx(0); }}
+                   onKeyDown={onKey} />
+            <div className="cmd-list">
+              {filtered.map((c, i) => (
+                <div key={c.id} className={`cmd-item ${i === idx ? 'active' : ''}`}
+                     onMouseEnter={() => setIdx(i)}
+                     onClick={() => { c.action(setActive, ctx); onClose(); }}>
+                  <span>{c.label}</span>
+                  <span className="kbd">{c.shortcut}</span>
+                </div>
+              ))}
+              {filtered.length === 0 && (
+                <div className="cmd-item" style={{ color: 'var(--text-muted)' }}>No commands match</div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ─── Ticker bar ─────────────────────────────────────── */
+    function TickerBar({ adi, sum }) {
+      const items = [
+        { l: 'ADI FDV',     v: fmtUSD(adi.fdv_usd),          cls: '' },
+        { l: 'FDV/TVL',     v: adi.fdv_usd ? fmtX(adi.fdv_usd / adi.tvl_with_ddsc, 1) : '-', cls: 'down' },
+        { l: 'ADI MC',      v: fmtUSD(adi.token_mcap),       cls: '' },
+        { l: 'MC/TVL',      v: fmtX(adi.mcaptvl_with_ddsc,2),cls: 'warn' },
+        { l: 'ADI TVL',     v: fmtUSD(adi.tvl_with_ddsc),    cls: '' },
+        { l: 'DDSC',        v: fmtUSD(adi.ddsc_tvl_usd),     cls: 'up' },
+        { l: 'DEFILLAMA VIEW', v: fmtX(adi.mcaptvl,0),       cls: 'down' },
+        { l: '24H TURNOVER',v: fmtPct(adi.turnover_vol_mc_pct,2), cls: 'down' },
+        { l: 'L2s TRACKED', v: D.rows.length,                 cls: '' },
+        { l: 'MID FDV/TVL', v: '6.7×',                        cls: '' },
+        { l: 'NON-AIRDROP FDV/TVL', v: '6.7×',               cls: '' },
+        { l: 'CIRCULATING', v: '~10%',                        cls: 'warn' },
+      ];
+      // Duplicate for seamless infinite scroll
+      const display = [...items, ...items];
+      return (
+        <div className="ticker">
+          <div className="ticker-inner">
+            {display.map((it, i) => (
+              <span key={i} className="ticker-item">
+                <span className="l">{it.l}</span>
+                <span className={`v ${it.cls}`}>{it.v}</span>
+                {i < display.length - 1 && <span className="ticker-sep">·</span>}
+              </span>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    /* ─── Sidebar nav icons ────────────────────────────── */
+    const NavIcon = ({ id }) => {
+      const ic = {
+        overview:     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>,
+        distribution: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg>,
+        scatter:      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="6" cy="18" r="1.5"/><circle cx="10" cy="13" r="1.5"/><circle cx="14" cy="15" r="1.5"/><circle cx="18" cy="7" r="1.5"/><line x1="3" y1="3" x2="3" y2="21"/><line x1="3" y1="21" x2="21" y2="21"/></svg>,
+        table:        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>,
+        report:       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>,
+      };
+      return ic[id] || ic.overview;
+    };
+
+    /* ─── Sparkline (inline SVG) ───────────────────────── */
+    const Spark = ({ data, width=60, height=18 }) => {
+      if (!data || data.length < 2) return <span className="muted" style={{ fontSize: 10 }}>-</span>;
+      const min = Math.min(...data), max = Math.max(...data);
+      const range = max - min || 1;
+      const pts = data.map((v, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = height - ((v - min) / range) * (height - 2) - 1;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+      const trend = data[data.length-1] - data[0];
+      const color = trend > 0 ? 'var(--accent-green)' : trend < 0 ? 'var(--accent-red)' : 'var(--text-muted)';
+      return (
+        <svg width={width} height={height} className="spark" style={{ display: 'inline-block' }}>
+          <polyline points={pts} fill="none" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    };
+
+    /* ─── Delta chip ───────────────────────────────────── */
+    const Delta = ({ pct, suffix = '%' }) => {
+      if (pct == null || isNaN(pct)) return null;
+      const cls = pct > 0.3 ? 'up' : pct < -0.3 ? 'down' : 'flat';
+      const sign = pct > 0 ? '+' : '';
+      return <span className={`delta ${cls}`}>{sign}{pct.toFixed(1)}{suffix}</span>;
+    };
+
+    /* ─── ChainChart: interactive multi-metric chart for detail pane ─ */
+    function ChainChart({ chain }) {
+      const r = chain;
+      // Build available metrics
+      const metrics = [
+        { id: 'price',   label: 'Price',   data: r.sparkline_30d,    fmt: v => `$${v < 1 ? v.toFixed(4) : v.toFixed(2)}` },
+        { id: 'tx',      label: 'Tx / day',data: r.tx_history,       fmt: v => Math.round(v).toLocaleString() },
+        { id: 'daa',     label: 'Active wallets', data: r.daa_history, fmt: v => Math.round(v).toLocaleString() },
+        { id: 'stables', label: 'Stables on chain', data: r.stables_history, fmt: v => fmtUSD(v) },
+        { id: 'fees',    label: 'Fees paid (USD)', data: r.fees_history, fmt: v => fmtUSD(v, 2) },
+      ];
+      const available = metrics.filter(m => Array.isArray(m.data) && m.data.length > 1);
+      const [activeId, setActiveId] = useState(available[0]?.id);
+      const [hover, setHover] = useState(null);
+      if (available.length === 0) {
+        return <div style={{ padding: 12, fontSize: 11.5, color: 'var(--text-muted)' }}>
+          No time-series available for this chain.
+          {r.name === 'ADI Chain' && <div style={{ marginTop: 4 }}>ADI Chain not yet on Growthepie · submit at growthepie.xyz</div>}
+        </div>;
+      }
+      const m = available.find(x => x.id === activeId) || available[0];
+      const data = m.data;
+      const W = 420, H = 140, P = { l: 50, r: 8, t: 10, b: 22 };
+      const inner = { w: W - P.l - P.r, h: H - P.t - P.b };
+      const min = Math.min(...data), max = Math.max(...data);
+      const range = max - min || 1;
+      const sx = i => P.l + (i / (data.length - 1)) * inner.w;
+      const sy = v => P.t + inner.h - ((v - min) / range) * (inner.h - 2) - 1;
+      const trend = data[data.length-1] - data[0];
+      const trendPct = data[0] ? (trend / data[0]) * 100 : 0;
+      const stroke = trend >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+      const fill   = trend >= 0 ? 'rgba(46,204,113,0.14)' : 'rgba(255,90,95,0.14)';
+      const pts = data.map((v, i) => `${sx(i).toFixed(1)},${sy(v).toFixed(1)}`).join(' ');
+      const areaPts = `${sx(0).toFixed(1)},${(P.t+inner.h).toFixed(1)} ${pts} ${sx(data.length-1).toFixed(1)},${(P.t+inner.h).toFixed(1)}`;
+      const ts = r.history_timestamps;
+      const tsAt = i => ts && ts[i] ? new Date(ts[i]*1000).toLocaleDateString(undefined,{month:'short', day:'numeric'}) : `d-${data.length-1-i}`;
+      const ticks = [0, Math.floor(data.length*0.5), data.length-1];
+
+      const onMove = (e) => {
+        const svg = e.currentTarget;
+        const rect = svg.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * W;
+        if (x < P.l || x > P.l + inner.w) return setHover(null);
+        const i = Math.round(((x - P.l) / inner.w) * (data.length - 1));
+        setHover({ i, v: data[i] });
+      };
+
+      return (
+        <div>
+          {/* metric tabs */}
+          <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap' }}>
+            {available.map(opt => (
+              <button key={opt.id} onClick={() => setActiveId(opt.id)}
+                      className={`time-pill ${activeId === opt.id ? 'active' : ''}`}
+                      style={{ padding: '3px 8px', fontSize: 9.5 }}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
+               style={{ display: 'block', width: '100%', height: 'auto', cursor: 'crosshair' }}
+               onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+            <defs>
+              <linearGradient id={`g-${r.name}-${m.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stopColor={stroke} stopOpacity="0.30" />
+                <stop offset="100%" stopColor={stroke} stopOpacity="0.02" />
+              </linearGradient>
+            </defs>
+            {/* y gridlines */}
+            {[0, 0.5, 1].map(p => {
+              const y = P.t + p * inner.h;
+              return <line key={p} x1={P.l} y1={y} x2={P.l+inner.w} y2={y} stroke="var(--tint-soft)" />;
+            })}
+            {/* y tick labels */}
+            <text x={P.l - 6} y={P.t + 4} textAnchor="end" fontSize="9" fill="var(--text-muted)" fontFamily="var(--font-mono)">{m.fmt(max)}</text>
+            <text x={P.l - 6} y={P.t + inner.h + 3} textAnchor="end" fontSize="9" fill="var(--text-muted)" fontFamily="var(--font-mono)">{m.fmt(min)}</text>
+            {/* x tick labels */}
+            {ticks.map(i => (
+              <text key={i} x={sx(i)} y={H - 8} textAnchor="middle" fontSize="9" fill="var(--text-muted)" fontFamily="var(--font-mono)">{tsAt(i)}</text>
+            ))}
+            {/* area */}
+            <polygon points={areaPts} fill={`url(#g-${r.name}-${m.id})`} stroke="none" />
+            {/* line */}
+            <polyline points={pts} fill="none" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            {/* hover crosshair */}
+            {hover && (
+              <g>
+                <line x1={sx(hover.i)} y1={P.t} x2={sx(hover.i)} y2={P.t+inner.h} stroke="var(--text-muted)" strokeDasharray="2 2" />
+                <circle cx={sx(hover.i)} cy={sy(hover.v)} r="3" fill={stroke} stroke="var(--card)" strokeWidth="1.5" />
+                <rect x={sx(hover.i) + 6} y={sy(hover.v) - 18} width="100" height="32" rx="2" fill="var(--card)" stroke="var(--border-bright)" />
+                <text x={sx(hover.i) + 12} y={sy(hover.v) - 5} fontSize="10" fill="var(--text-muted)" fontFamily="var(--font-mono)">{tsAt(hover.i)}</text>
+                <text x={sx(hover.i) + 12} y={sy(hover.v) + 8} fontSize="11" fill="var(--foreground)" fontFamily="var(--font-mono)" fontWeight="700">{m.fmt(hover.v)}</text>
+              </g>
+            )}
+          </svg>
+
+          {/* footer summary */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+            <span>{data.length}d window</span>
+            <span>
+              Current <span style={{ color: 'var(--foreground)', fontWeight: 600 }}>{m.fmt(data[data.length-1])}</span>
+              {' · '}
+              <span style={{ color: stroke, fontWeight: 600 }}>{trendPct >= 0 ? '+' : ''}{trendPct.toFixed(1)}%</span>
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    /* ─── Detail pane (slides in from right) ───────────── */
+    function DetailPane({ chain, onClose }) {
+      if (!chain) return null;
+      const r = chain;
+      const mt = r.chain_mcap && r.tvl ? r.chain_mcap/r.tvl : null;
+      const fdvtvl = r.fdv_usd && r.tvl ? r.fdv_usd/r.tvl : null;
+      const isAdi = r.name === 'ADI Chain';
+      const sparks = (window.ADI_L2_SPARKLINES || {})[r.name];
+
+      return (
+        <>
+          <div className="detail-overlay" onClick={onClose} />
+          <div className="detail-pane">
+            <div className="detail-head">
+              <div>
+                <h3>{r.name}{isAdi && <span style={{ color: 'var(--accent-red)', marginLeft: 8, fontSize: 11 }}>AUDIT SUBJECT</span>}</h3>
+                <div className="sub">{r.symbol || 'no token'} · {r.distribution_model || '-'} · {r.tier || 'tier-tbd'}</div>
+              </div>
+              <button className="detail-close" onClick={onClose}>×</button>
+            </div>
+            <div className="detail-body">
+              <div className="detail-section-label">Core metrics</div>
+              <div className="detail-row"><span className="k">TVL</span><span className="v">{fmtUSD(isAdi ? r.tvl_with_ddsc : r.tvl)}</span></div>
+              <div className="detail-row"><span className="k">Token Mcap</span><span className="v">{fmtUSD(r.chain_mcap || r.token_mcap)}</span></div>
+              <div className="detail-row"><span className="k">FDV</span><span className="v">{fmtUSD(r.fdv_usd)}</span></div>
+              <div className="detail-row"><span className="k">Max supply</span><span className="v">{r.max_supply ? Number(r.max_supply).toLocaleString(undefined,{maximumFractionDigits:0}) : '-'}</span></div>
+              <div className="detail-row"><span className="k">Circulating</span><span className="v">{r.circulating_supply ? Number(r.circulating_supply).toLocaleString(undefined,{maximumFractionDigits:0}) : '-'}</span></div>
+              <div className="detail-row"><span className="k">Mcap / TVL</span><span className={`v ${(isAdi ? r.mcaptvl_with_ddsc : mt) > 50 ? 'down' : (isAdi ? r.mcaptvl_with_ddsc : mt) > 10 ? 'warn' : ''}`}>{fmtX(isAdi ? r.mcaptvl_with_ddsc : mt, 2)}</span></div>
+              <div className="detail-row"><span className="k">FDV / TVL</span><span className={`v ${fdvtvl > 50 ? 'down' : fdvtvl > 10 ? 'warn' : ''}`}>{fmtX(isAdi ? (r.fdv_usd && r.tvl_with_ddsc ? r.fdv_usd / r.tvl_with_ddsc : null) : fdvtvl, 2)}</span></div>
+
+              <div className="detail-section-label">Activity</div>
+              <div className="detail-row"><span className="k">Tx / day</span><span className="v">{r.tx_per_day ? Math.round(r.tx_per_day).toLocaleString() : '-'}</span></div>
+              <div className="detail-row"><span className="k">Active wallets / day</span><span className="v">{r.active_wallets_per_day ? Math.round(r.active_wallets_per_day).toLocaleString() : '-'}</span></div>
+              <div className="detail-row"><span className="k">24h DEX volume</span><span className="v">{fmtUSD(r.dex_v24, 2)}</span></div>
+              <div className="detail-row"><span className="k">24h total volume</span><span className="v">{fmtUSD(r.total_volume_usd, 2)}</span></div>
+              <div className="detail-row"><span className="k">Stables on chain</span><span className="v">{fmtUSD(r.stables_mcap_chain)}</span></div>
+              <div className="detail-row"><span className="k">Protocols</span><span className="v">{r.protocols ?? '-'}</span></div>
+
+              <div className="detail-section-label">Momentum</div>
+              <div className="detail-row"><span className="k">TVL 7d</span><span className={`v ${r.tvl_chg_7d > 0 ? 'up' : r.tvl_chg_7d < 0 ? 'down' : ''}`}>{r.tvl_chg_7d != null ? `${r.tvl_chg_7d > 0 ? '+':''}${r.tvl_chg_7d.toFixed(2)}%` : '-'}</span></div>
+              <div className="detail-row"><span className="k">TVL 30d</span><span className={`v ${r.tvl_chg_30d > 0 ? 'up' : r.tvl_chg_30d < 0 ? 'down' : ''}`}>{r.tvl_chg_30d != null ? `${r.tvl_chg_30d > 0 ? '+':''}${r.tvl_chg_30d.toFixed(2)}%` : '-'}</span></div>
+              <div className="detail-row"><span className="k">Price 7d</span><span className={`v ${r.price_chg_7d > 0 ? 'up' : r.price_chg_7d < 0 ? 'down' : ''}`}>{r.price_chg_7d != null ? `${r.price_chg_7d > 0 ? '+':''}${r.price_chg_7d.toFixed(2)}%` : '-'}</span></div>
+              <div className="detail-row"><span className="k">Price 30d</span><span className={`v ${r.price_chg_30d > 0 ? 'up' : r.price_chg_30d < 0 ? 'down' : ''}`}>{r.price_chg_30d != null ? `${r.price_chg_30d > 0 ? '+':''}${r.price_chg_30d.toFixed(2)}%` : '-'}</span></div>
+
+              <div className="detail-section-label">30d chart</div>
+              <ChainChart chain={r} />
+
+
+              <div className="detail-section-label">Distribution</div>
+              <div className="detail-row"><span className="k">Model</span><span className="v">{r.distribution_model || '-'}</span></div>
+              <div className="detail-row"><span className="k">Airdrop %</span><span className="v">{r.airdrop_pct_of_supply ? `${r.airdrop_pct_of_supply}%` : '-'}</span></div>
+              <div className="detail-row"><span className="k">Has token</span><span className="v">{r.has_token === false ? 'no' : 'yes'}</span></div>
+
+              {isAdi && (
+                <>
+                  <div className="detail-section-label">ADI-specific</div>
+                  <div className="detail-row"><span className="k">DDSC supply (AED)</span><span className="v">{Number(r.ddsc_tvl_aed).toLocaleString()} AED</span></div>
+                  <div className="detail-row"><span className="k">DDSC supply (USD)</span><span className="v">{fmtUSD(r.ddsc_tvl_usd)}</span></div>
+                  <div className="detail-row"><span className="k">DDSC reserve bank</span><span className="v">{r.ddsc_reserve_bank}</span></div>
+                  <div className="detail-row"><span className="k">DDSC contract</span><span className="v" style={{ fontSize: 10 }}>{r.ddsc_contract?.slice(0,10)}…{r.ddsc_contract?.slice(-4)}</span></div>
+                  <div className="detail-row"><span className="k">Top 10 hold</span><span className="v down">{r.top10_concentration_pct}%</span></div>
+                  <div className="detail-row"><span className="k">Gini</span><span className="v down">{r.gini}</span></div>
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    function App() {
+      const [active, setActive] = useState('overview');
+      const [exporting, setExporting] = useState(false);
+      const [cmdOpen, setCmdOpen] = useState(false);
+      const [detail, setDetail] = useState(null);
+      const [tableFilter, setTableFilter] = useState('all');
+      const [metric, setMetric] = useState(() => {
+        try { return localStorage.getItem('adi-l2-metric') || 'fdv'; } catch (e) { return 'fdv'; }
+      });
+      const setMetricPersist = (m) => {
+        setMetric(m);
+        try { localStorage.setItem('adi-l2-metric', m); } catch (e) {}
+      };
+      const [theme, setTheme] = useState(() => {
+        try { return document.body.getAttribute('data-theme') || 'dark'; } catch (e) { return 'dark'; }
+      });
+      const adi = D.adi;
+      const sum = D.tierSummary;
+      const C = D.cohorts || {};
+      // Click-to-detail helper passed into widgets
+      const openDetail = (r) => setDetail(r);
+      // Theme toggle
+      const toggleTheme = () => {
+        const next = theme === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', next);
+        try { localStorage.setItem('adi-l2-theme', next); } catch (e) {}
+        setTheme(next);
+      };
+      // Command-palette context for filter shortcuts + theme
+      const cmdCtx = {
+        setFilter: (id) => { setTableFilter(id); setActive('table'); },
+        toggleTheme,
+      };
+
+      // Global keyboard shortcuts
+      React.useEffect(() => {
+        const onKey = (e) => {
+          const tag = e.target.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault(); setCmdOpen(true); return;
+          }
+          if (e.key === '/') { e.preventDefault(); setCmdOpen(true); return; }
+          if (e.key.toLowerCase() === 't') { e.preventDefault(); toggleTheme(); return; }
+          if (/^[1-5]$/.test(e.key)) {
+            const nav = NAV.find(n => n.hotkey === e.key);
+            if (nav) setActive(nav.id);
+          }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, [theme]);
+
+      const exportPNG = async () => {
+        if (exporting) return;
+        setExporting(true);
+        const target = document.querySelector('.main-inner');
+        try {
+          if (window.htmlToImage && target) {
+            const dataUrl = await window.htmlToImage.toPng(target, {
+              backgroundColor: getComputedStyle(document.body).backgroundColor || '#F5F6F8',
+              pixelRatio: 2,
+              cacheBust: true,
+            });
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `adi-l2-benchmark-${active}-${D.asOf}.png`;
+            a.click();
+          } else {
+            alert('PNG library not loaded, refresh and try again.');
+          }
+        } catch (e) {
+          console.error('PNG export failed:', e);
+          alert('Export failed: ' + e.message);
+        } finally {
+          setExporting(false);
+        }
+      };
+
+      return (
+        <>
+          {/* Left sidebar nav */}
+          <aside className="sidebar-nav">
+            <div className="sidebar-brand" title="ADI L2 Benchmark">DL</div>
+            {NAV.map(n => (
+              <div key={n.id}
+                   className={`sidebar-item ${active === n.id ? 'active' : ''}`}
+                   onClick={() => setActive(n.id)}>
+                <NavIcon id={n.id} />
+                <span className="kbd-mini">{n.hotkey}</span>
+                <span className="tip">{n.label}</span>
+              </div>
+            ))}
+            <div className="sidebar-spacer" />
+            <div className="sidebar-item" onClick={toggleTheme} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+              {theme === 'dark' ? (
+                /* sun icon for "switch to light" */
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="4"/>
+                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+                </svg>
+              ) : (
+                /* moon icon for "switch to dark" */
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+              )}
+              <span className="tip">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+            </div>
+            <div className="sidebar-item" onClick={() => setCmdOpen(true)} title="Command palette (⌘K)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6h-6z"/></svg>
+              <span className="tip">⌘K · Command</span>
+            </div>
+            <div className="sidebar-item" onClick={exportPNG} title="Export PNG">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span className="tip">Export PNG</span>
+            </div>
+            <div className="sidebar-item" onClick={() => window.open('https://github.com/surgencelab/adil2benchmark','_blank')} title="GitHub repo">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+              <span className="tip">GitHub repo</span>
+            </div>
+          </aside>
+
+          {/* Ticker bar */}
+          <TickerBar adi={adi} sum={sum} />
+
+          {/* Compact top bar */}
+          <nav className="top-nav">
+            <div className="top-nav-inner">
+              <div className="brand-cluster">
+                <span className="brand-title">{NAV.find(n => n.id === active)?.label || 'Overview'} · ADI L2 Benchmark</span>
+              </div>
+              <div className="nav-cluster">
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 0, marginRight: 8, border: '1px solid var(--border-bright)', borderRadius: 3, overflow: 'hidden' }} title="Switch the valuation lens used in scatter, heatmap, and 'Where ADI sits'. Mcap (price × circulating) is the standard CG / CMC number. FDV (price × max supply) is the apples-to-apples lens preferred by analysts when distribution differs across projects.">
+                  <button onClick={() => setMetricPersist('mcap')}
+                          style={{ padding: '4px 10px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                   background: metric === 'mcap' ? 'rgba(255,139,77,0.10)' : 'transparent',
+                                   color: metric === 'mcap' ? 'var(--accent-orange)' : 'var(--text-muted)',
+                                   border: 'none', cursor: 'pointer' }}>Mcap</button>
+                  <button onClick={() => setMetricPersist('fdv')}
+                          style={{ padding: '4px 10px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                   background: metric === 'fdv' ? 'rgba(255,139,77,0.10)' : 'transparent',
+                                   color: metric === 'fdv' ? 'var(--accent-orange)' : 'var(--text-muted)',
+                                   border: 'none', cursor: 'pointer', borderLeft: '1px solid var(--border-bright)' }}>FDV</button>
+                </div>
+                <span className="cmd-hint" onClick={() => setCmdOpen(true)} title="Open command palette (⌘K or /)">
+                  ⌘K<span className="kbd">/</span>
+                </span>
+                <span className="live-pill"><span className="live-dot" />LIVE · {D.asOf}</span>
+              </div>
+            </div>
+          </nav>
+
+          {/* Command palette + detail pane */}
+          <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} setActive={setActive} ctx={cmdCtx} />
+          {detail && <DetailPane chain={detail} onClose={() => setDetail(null)} />}
+
+          {/* Main */}
+          <div className="main-wrap">
+            <div className="main-inner">
+
+              {active === 'overview' && (() => {
+                const adiMT = adi.mcaptvl_with_ddsc;
+                // Closest cohort peer by Mcap/TVL
+                const peers = D.rows
+                  .filter(r => r.has_token && !r.airdrop_distributed && r.chain_mcap && r.tvl)
+                  .map(r => ({...r, _mt: r.chain_mcap/r.tvl, _dist: Math.abs((r.chain_mcap/r.tvl) - adiMT)}))
+                  .sort((a,b) => a._dist - b._dist)
+                  .slice(0, 3);
+                return (
+                  <div className="term-grid">
+
+                    {/* Row 1: ADI KPIs across the top */}
+                    <div className="widget w-12" title="ADI's six headline numbers. Mcap is the public token cap (price × circulating). TVL is the dollar value on ADI Chain, including $33.2M of DDSC stablecoin verified live via RPC. FDV is fully-diluted. Mcap/TVL and FDV/TVL show how expensive the token is vs real usage; healthy L2 range is 0.3-5×. Turnover is 24h volume / Mcap; below 1%/day is conventionally illiquid.">
+                      <div className="widget-head">
+                        <span className="widget-title">ADI · key metrics</span>
+                        <span className="widget-meta">On-chain · verified · hover header to learn</span>
+                      </div>
+                      <div className="widget-body">
+                        <div className="stat-row" style={{ justifyContent: 'space-between' }}>
+                          <div className="stat"><div className="l">Mcap</div><div className="v">{fmtUSD(adi.token_mcap)}</div><div className="s">CG · Kraken</div></div>
+                          <div className="stat"><div className="l">TVL (on-chain)</div><div className="v">{fmtUSD(adi.tvl_with_ddsc)}</div><div className="s">incl. DDSC</div></div>
+                          <div className="stat"><div className="l">FDV</div><div className="v">{fmtUSD(adi.fdv_usd)}</div><div className="s">1B max supply</div></div>
+                          <div className="stat"><div className="l">Mcap / TVL</div><div className="v warn">{fmtX(adiMT, 2)}</div><div className="s">Mid med {fmtX(sum.Mid.mcap_tvl_med,2)}</div></div>
+                          <div className="stat"><div className="l">FDV / TVL</div><div className="v warn">{fmtX(adi.fdv_usd/adi.tvl_with_ddsc, 1)}</div><div className="s">unlock overhang</div></div>
+                          <div className="stat"><div className="l">24h turnover</div><div className="v down">{fmtPct(adi.turnover_vol_mc_pct,2)}</div><div className="s">below 1% illiquid</div></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Row 2: TVL composition (left) + ADI position read (right) */}
+                    <div className="widget w-6" title="What makes up ADI's $35.2M TVL. The Uniswap LP figure is what DefiLlama indexes today. The DDSC figure is the on-chain totalSupply() of the CBUAE-licensed DDSC stablecoin (1 DDSC = 1 AED, reserves at FAB), converted to USD at the 3.6725 peg. The audit's '$2M / 206×' headline misses the DDSC line.">
+                      <div className="widget-head">
+                        <span className="widget-title">TVL composition</span>
+                        <span className="widget-meta">rpc.adifoundation.ai · hover to learn</span>
+                      </div>
+                      <div className="widget-body flush">
+                        <table className="data-table">
+                          <thead><tr><th>Component</th><th className="right">USD</th><th>Verification</th></tr></thead>
+                          <tbody>
+                            <tr><td>Uniswap V3 LP</td><td className="right">{fmtUSD(adi.tvl_defillama_visible)}</td><td className="muted">DefiLlama</td></tr>
+                            <tr><td>DDSC (1 AED peg, FAB)</td><td className="right">{fmtUSD(adi.ddsc_tvl_usd)}</td><td className="muted">eth_call</td></tr>
+                            <tr style={{ background: 'rgba(255,139,77,0.08)', fontWeight: 600 }}>
+                              <td>Total</td><td className="right">{fmtUSD(adi.tvl_with_ddsc)}</td><td className="muted">sum</td>
+                            </tr>
+                            <tr><td className="muted">DefiLlama view (no DDSC)</td><td className="right" style={{ color: 'var(--accent-red)' }}>{fmtUSD(adi.tvl_defillama_visible)}</td><td className="muted">audit ref</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <div className="widget w-6" title="A plain-English read of where ADI lands across the L2 universe given everything in the dataset.">
+                      <div className="widget-head">
+                        <span className="widget-title">Where ADI sits</span>
+                        <span className="widget-meta">peer + tier + audit lens</span>
+                      </div>
+                      <div className="widget-body">
+                        <div className="position-read" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                          <div className="pr-cell">
+                            <div className="pr-label">Mcap lens (price × circulating)</div>
+                            <div className="pr-value">
+                              ADI's <b>M/T {fmtX(adiMT,2)}</b> vs non-airdrop cohort median <b>{fmtX(C.NonAirdrop?.mcap_tvl_med,2)}</b>.
+                              That's <span className="warn">{(adiMT/(C.NonAirdrop?.mcap_tvl_med||1)).toFixed(1)}× the cohort median</span>.
+                              Tight float (~10% circulating) flatters the number.
+                            </div>
+                          </div>
+                          <div className="pr-cell" style={{ background: 'rgba(255,139,77,0.04)', borderRadius: 3 }}>
+                            <div className="pr-label" style={{ color: 'var(--accent-orange)' }}>FDV lens · client preferred</div>
+                            <div className="pr-value">
+                              ADI's <b>FDV/TVL {fmtX(adi.fdv_usd/adi.tvl_with_ddsc,1)}</b> vs non-airdrop cohort median <b>{fmtX(C.NonAirdrop?.fdv_tvl_med,2)}</b>.
+                              That's <span className="danger">{(adi.fdv_usd/adi.tvl_with_ddsc/(C.NonAirdrop?.fdv_tvl_med||1)).toFixed(1)}× the cohort median</span>.
+                              FDV doesn't depend on distribution; it's the apples-to-apples lens.
+                            </div>
+                          </div>
+                        </div>
+                        <div className="position-read" style={{ marginTop: 10 }}>
+                          <div className="pr-cell">
+                            <div className="pr-label">Nearest peers (by Mcap/TVL)</div>
+                            <div className="pr-value">
+                              {peers.map((p) => (
+                                <div key={p.name}>
+                                  <b>{p.name}</b> M/T {fmtX(p._mt,2)} · FDV/TVL {p.fdv_usd ? fmtX(p.fdv_usd/p.tvl,2) : '-'}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="pr-cell">
+                            <div className="pr-label">Cohort medians (n)</div>
+                            <div className="pr-value">
+                              Airdrop ({C.Airdrop?.n}) · M/T <b>{fmtX(C.Airdrop?.mcap_tvl_med,2)}</b> · FDV/TVL <b>{fmtX(C.Airdrop?.fdv_tvl_med,2)}</b><br/>
+                              Non-airdrop ({C.NonAirdrop?.n}) · M/T <b>{fmtX(C.NonAirdrop?.mcap_tvl_med,2)}</b> · FDV/TVL <b>{fmtX(C.NonAirdrop?.fdv_tvl_med,2)}</b><br/>
+                              No-token ({C.NoToken?.n}) · TVL med <b>{fmtUSD(C.NoToken?.tvl_med)}</b>
+                            </div>
+                          </div>
+                          <div className="pr-cell">
+                            <div className="pr-label">Audit-view gap</div>
+                            <div className="pr-value">
+                              DefiLlama M/T <span className="danger">{fmtX(adi.mcaptvl,0)}</span> (no DDSC indexed).
+                              On-chain M/T is <b>{fmtX(adiMT,2)}</b>. The gap is a data-layer problem.
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Row 3: Navigation cards to deeper views */}
+                    <div className="w-12">
+                      <div className="nav-cards">
+                        <div className="nav-card" onClick={() => setActive('table')} title="Filter, sort, and drill into every L2/rollup in the dataset">
+                          <span className="nc-eyebrow">3 · L2 Universe</span>
+                          <span className="nc-title">Compare ADI to {D.rows.length} chains</span>
+                          <span className="nc-sub">Filter by distribution model, tier, FDV status. Click any row for full chain detail with a 30-day chart.</span>
+                          <span className="nc-arrow">Open table →</span>
+                        </div>
+                        <div className="nav-card" onClick={() => setActive('scatter')} title="See ADI's position visually against the L2 universe">
+                          <span className="nc-eyebrow">2 · Charts</span>
+                          <span className="nc-title">Where ADI sits on the map</span>
+                          <span className="nc-sub">Mcap vs TVL scatter (both ADI views shown) + Mcap/TVL trend over 90 days vs tier-median bands.</span>
+                          <span className="nc-arrow">Open charts →</span>
+                        </div>
+                        <div className="nav-card" onClick={() => setActive('report')} title="Plain-English briefing for stakeholders">
+                          <span className="nc-eyebrow">5 · Report</span>
+                          <span className="nc-title">Two-page findings &amp; implications</span>
+                          <span className="nc-sub">Methodology, headline numbers, what the data-layer gap means, IHC institutional proof point.</span>
+                          <span className="nc-arrow">Read report →</span>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              })()}
+
+
+              {active === 'scatter' && (() => {
+                const yKey = metric === 'fdv' ? 'fdv_usd' : 'chain_mcap';
+                const adiYval = metric === 'fdv' ? adi.fdv_usd : adi.token_mcap;
+                const adiMT = adiYval / adi.tvl_with_ddsc;
+                const ratioLabel = metric === 'fdv' ? 'FDV/TVL' : 'Mcap/TVL';
+                const heatChains = [...D.rows]
+                  .filter(r => r[yKey] && r.tvl)
+                  .map(r => ({...r, _mt: r[yKey]/r.tvl}))
+                  .sort((a,b) => b[yKey] - a[yKey])
+                  .slice(0, 18)
+                  .concat([{ name: 'ADI Chain', symbol: 'ADI', _mt: adiMT, _adi: true,
+                             chain_mcap: adi.token_mcap, fdv_usd: adi.fdv_usd, tvl: adi.tvl_with_ddsc, ...adi }]);
+                const tvlLeader = [...D.rows]
+                  .filter(r => r.tvl > 0)
+                  .sort((a,b) => b.tvl - a.tvl)
+                  .slice(0, 10);
+                const maxTvl = Math.max(...tvlLeader.map(r => r.tvl));
+                return (
+                  <div className="term-grid">
+
+                    <div className="widget w-12"
+                         title="Each dot is one L2. X = chain TVL (real capital deployed). Y = native token Mcap (price × circulating) or FDV (price × max supply), toggled via the pills on this chart. Both axes are log scale. Dots near the dashed y=x line are 'fairly priced' to usage; dots above are growth-priced; dots far above are outliers. Shaded green band = healthy 0.3-5× ratio. ADI shown twice: solid dot = on-chain TVL incl. DDSC ($35M), open dashed dot = DefiLlama-only view ($2M). Hover a dot for chain detail; click to open the detail pane. Use the MCAP / FDV pills to swap the Y-axis lens.">
+                      <div className="widget-head">
+                        <span className="widget-title">{metric === 'fdv' ? 'FDV' : 'MCAP'} vs TVL · log-log</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid var(--border-bright)', borderRadius: 3, overflow: 'hidden' }}
+                               title="Swap the Y-axis between Mcap (price × circulating) and FDV (price × max supply). Client-preferred is FDV.">
+                            <button onClick={() => setMetricPersist('mcap')}
+                                    style={{ padding: '3px 9px', fontFamily: 'var(--font-mono)', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                             background: metric === 'mcap' ? 'rgba(255,139,77,0.12)' : 'transparent',
+                                             color: metric === 'mcap' ? 'var(--accent-orange)' : 'var(--text-muted)',
+                                             border: 'none', cursor: 'pointer' }}>Mcap</button>
+                            <button onClick={() => setMetricPersist('fdv')}
+                                    style={{ padding: '3px 9px', fontFamily: 'var(--font-mono)', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                             background: metric === 'fdv' ? 'rgba(255,139,77,0.12)' : 'transparent',
+                                             color: metric === 'fdv' ? 'var(--accent-orange)' : 'var(--text-muted)',
+                                             border: 'none', borderLeft: '1px solid var(--border-bright)', cursor: 'pointer' }}>FDV</button>
+                          </div>
+                          <span className="widget-meta">{D.rows.filter(r => r.tvl > 0 && (r[metric === 'fdv' ? 'fdv_usd' : 'chain_mcap']||0) > 0).length + 1} chains · click any dot</span>
+                        </div>
+                      </div>
+                      <div className="widget-body flush">
+                        <ScatterMcapVsTvl rows={D.rows} adi={adi} openDetail={openDetail} metric={metric} />
+                      </div>
+                    </div>
+
+                    <div className="widget w-12"
+                         title="How ADI's Mcap/TVL ratio has moved over the last 90 days vs the median ratio for each L2 tier. The shaded bands show the 25th-75th percentile spread within each tier; chains in the middle 50% of their cohort sit inside the band. ADI's red line shows the DefiLlama-visible view (no DDSC), which trends upward as the token price drifts down on flat indexed TVL. The on-chain ratio is much lower; this chart shows what an external analyst sees on DefiLlama today.">
+                      <div className="widget-head">
+                        <span className="widget-title">Mcap / TVL over time</span>
+                        <span className="widget-meta">{D.history.windowDays}d window · tier medians + P25-P75 bands · hover header to learn</span>
+                      </div>
+                      <div className="widget-body flush">
+                        <McapTvlTrend history={D.history} adi={adi} />
+                      </div>
+                    </div>
+
+                    <div className="widget w-6"
+                         title="Top 10 L2s ranked by TVL, drawn as horizontal bars so size differences are immediate. Click any bar to open the detail pane.">
+                      <div className="widget-head">
+                        <span className="widget-title">TVL leaderboard</span>
+                        <span className="widget-meta">top 10 · click bar for detail · hover header to learn</span>
+                      </div>
+                      <div className="widget-body">
+                        {tvlLeader.map((r, i) => {
+                          const pct = (r.tvl / maxTvl) * 100;
+                          const mt = r.chain_mcap && r.tvl ? r.chain_mcap/r.tvl : null;
+                          return (
+                            <div key={r.name}
+                                 onClick={() => openDetail && openDetail(r)}
+                                 style={{ display: 'grid', gridTemplateColumns: '14px 110px 1fr 80px', gap: 8, alignItems: 'center', padding: '4px 0', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11.5 }}>
+                              <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>{i+1}</span>
+                              <span style={{ color: 'var(--foreground)' }}>{r.name}<span style={{ color: 'var(--text-muted)', fontSize: 10, marginLeft: 4 }}>{r.symbol || '-'}</span></span>
+                              <div style={{ position: 'relative', height: 14, background: 'var(--tint-soft)', borderRadius: 2 }}>
+                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`,
+                                              background: 'linear-gradient(90deg, var(--accent-orange), rgba(255,139,77,0.4))',
+                                              borderRadius: 2, opacity: 0.85 }} />
+                              </div>
+                              <span style={{ textAlign: 'right', color: 'var(--foreground)', fontWeight: 600 }}>{fmtUSD(r.tvl)}</span>
+                            </div>
+                          );
+                        })}
+                        {/* ADI row appended for context */}
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)',
+                                      display: 'grid', gridTemplateColumns: '14px 110px 1fr 80px', gap: 8, alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 11.5,
+                                      color: 'var(--accent-red)', fontWeight: 600, cursor: 'pointer' }}
+                             onClick={() => openDetail && openDetail({...adi, name: 'ADI Chain', symbol: 'ADI'})}>
+                          <span style={{ fontSize: 10 }}>·</span>
+                          <span>ADI Chain<span style={{ marginLeft: 4, fontSize: 10, opacity: 0.7 }}>ADI</span></span>
+                          <div style={{ position: 'relative', height: 14, background: 'var(--tint-soft)', borderRadius: 2 }}>
+                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0,
+                                          width: `${(adi.tvl_with_ddsc / maxTvl) * 100}%`,
+                                          background: 'var(--accent-red)', opacity: 0.7, borderRadius: 2 }} />
+                          </div>
+                          <span style={{ textAlign: 'right' }}>{fmtUSD(adi.tvl_with_ddsc)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="widget w-6"
+                         title={`Each tile is one L2, colored by ${ratioLabel} intensity. Green = healthy (under 2x), yellow = growth-priced (2-10x), amber = priced on expectation (10-50x), red = outlier (50x+). ADI outlined in orange. Use the MCAP / FDV pills below to swap the lens. Click any tile to open the detail pane.`}>
+                      <div className="widget-head">
+                        <span className="widget-title">{ratioLabel} heatmap</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid var(--border-bright)', borderRadius: 3, overflow: 'hidden' }}>
+                            <button onClick={() => setMetricPersist('mcap')}
+                                    style={{ padding: '3px 9px', fontFamily: 'var(--font-mono)', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                             background: metric === 'mcap' ? 'rgba(255,139,77,0.12)' : 'transparent',
+                                             color: metric === 'mcap' ? 'var(--accent-orange)' : 'var(--text-muted)',
+                                             border: 'none', cursor: 'pointer' }}>Mcap</button>
+                            <button onClick={() => setMetricPersist('fdv')}
+                                    style={{ padding: '3px 9px', fontFamily: 'var(--font-mono)', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                             background: metric === 'fdv' ? 'rgba(255,139,77,0.12)' : 'transparent',
+                                             color: metric === 'fdv' ? 'var(--accent-orange)' : 'var(--text-muted)',
+                                             border: 'none', borderLeft: '1px solid var(--border-bright)', cursor: 'pointer' }}>FDV</button>
+                          </div>
+                          <span className="widget-meta">top 18 · click for detail</span>
+                        </div>
+                      </div>
+                      <div className="widget-body">
+                        <div className="heatmap">
+                          {heatChains.map((r) => {
+                            const mt = r._mt;
+                            let bg, fg;
+                            if (mt > 50)      { bg = 'rgba(255,90,95,0.30)';  fg = 'var(--accent-red)'; }
+                            else if (mt > 10) { bg = 'rgba(245,181,68,0.22)'; fg = 'var(--accent-yellow)'; }
+                            else if (mt > 2)  { bg = 'rgba(245,181,68,0.10)'; fg = 'var(--foreground)'; }
+                            else              { bg = 'rgba(46,204,113,0.10)'; fg = 'var(--accent-green)'; }
+                            return (
+                              <div key={r.name}
+                                   className={`heat-cell ${r._adi ? 'adi' : ''}`}
+                                   style={{ background: bg }}
+                                   onClick={() => openDetail && openDetail(r)}
+                                   title={`${r.name} · ${fmtUSD(r.chain_mcap)} mcap · ${fmtUSD(r.tvl)} TVL`}>
+                                <span className="hname">{r.name}</span>
+                                <span className="hsym">{r.symbol || '-'}</span>
+                                <span className="hval" style={{ color: fg }}>{fmtX(mt, 2)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              })()}
+
+              {active === 'table' && (() => {
+                const FILTERS = [
+                  { id: 'all',         label: 'All L2s',        match: r => true },
+                  { id: 'airdrop',     label: 'Airdrop',        match: r => r.airdrop_distributed },
+                  { id: 'non-airdrop', label: 'Non-airdrop (have token)', match: r => r.has_token && !r.airdrop_distributed },
+                  { id: 'no_token',    label: 'No token',       match: r => !r.has_token },
+                  { id: 'fair_launch', label: 'Fair launch',    match: r => r.distribution_model === 'fair_launch' },
+                  { id: 'token_swap',  label: 'Token swap',     match: r => r.distribution_model === 'token_swap' },
+                  { id: 'large',       label: 'Large tier (top 5)',   match: r => r.tier === 'Large' },
+                  { id: 'mid',         label: 'Mid tier (6-15)',      match: r => r.tier === 'Mid' },
+                  { id: 'small',       label: 'Small tier (16-30)',   match: r => r.tier === 'Small' },
+                  { id: 'has_fdv',     label: 'With FDV data',  match: r => !!r.fdv_usd },
+                  { id: 'on_growthepie', label: 'On Growthepie', match: r => !!r.tx_per_day },
+                ];
+                const filterId = tableFilter;
+                const filt = FILTERS.find(f => f.id === filterId) || FILTERS[0];
+                const filteredRows = D.rows.filter(filt.match);
+
+                // Cohort medians for the chips strip
+                const C = D.cohorts || {};
+                return (
+                  <>
+                    <div className="page-header" style={{ marginBottom: 10 }}>
+                      <div className="page-eyebrow">L2 Universe</div>
+                      <h1 className="page-title" style={{ fontSize: 22 }}>
+                        {filteredRows.length} chains
+                        <span style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 10, fontWeight: 400 }}>
+                          ({filt.label})
+                        </span>
+                      </h1>
+                    </div>
+
+                    {/* Cohort summary strip */}
+                    <div className="section" style={{ marginBottom: 10 }}>
+                      <div className="meta-strip">
+                        <span className="kv"><span className="k">Airdrop ({C.Airdrop?.n})</span><span className="v">M/T med {fmtX(C.Airdrop?.mcap_tvl_med,2)} · FDV med {fmtUSD(C.Airdrop?.fdv_med)}</span></span>
+                        <span className="kv" style={{ borderColor: 'var(--accent-red)' }}><span className="k">Non-airdrop ({C.NonAirdrop?.n})</span><span className="v" style={{ color: 'var(--accent-red)' }}>M/T med {fmtX(C.NonAirdrop?.mcap_tvl_med,2)} · FDV med {fmtUSD(C.NonAirdrop?.fdv_med)}</span></span>
+                        <span className="kv"><span className="k">No-token ({C.NoToken?.n})</span><span className="v">TVL med {fmtUSD(C.NoToken?.tvl_med)}</span></span>
+                        <span className="kv"><span className="k">ADI</span><span className="v" style={{ color: 'var(--accent-red)' }}>M/T {fmtX(adi.mcaptvl_with_ddsc,2)} · {(adi.mcaptvl_with_ddsc/(C.NonAirdrop?.mcap_tvl_med||1)).toFixed(1)}× non-airdrop median</span></span>
+                      </div>
+                    </div>
+
+                    {/* Filter chips */}
+                    <div className="section" style={{ marginBottom: 10, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                      {FILTERS.map(f => {
+                        const count = D.rows.filter(f.match).length;
+                        return (
+                          <button key={f.id}
+                                  onClick={() => setTableFilter(f.id)}
+                                  className={`time-pill ${filterId === f.id ? 'active' : ''}`}
+                                  style={{ cursor: 'pointer' }}>
+                            {f.label} <span style={{ opacity: 0.6, marginLeft: 4 }}>{count}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="section"
+                         title="One row per L2/rollup. ADI pinned at top. Sortable conceptually by tier. Columns: Chain, Token symbol, Distribution model (airdrop / no token / token swap / fair launch / private), TVL, Mcap, FDV, Mcap/TVL ratio, FDV/TVL ratio, daily transactions, daily active wallets, 24h DEX volume, Vol/TVL %. Click any row for the full detail pane with a 30-day chart. Use the filter chips above to slice by distribution model or tier.">
+                      <TuiPanel title="L2 universe" badge={`${filteredRows.length} chains · click any row for full detail · hover header to learn`} flush>
+                        <BenchmarkTable rows={filteredRows} adi={adi} openDetail={openDetail} />
+                      </TuiPanel>
+                    </div>
+                  </>
+                );
+              })()}
+
+              {active === 'report' && (
+                <>
+                  <div className="page-header">
+                    <div className="page-eyebrow">Report</div>
+                    <h1 className="page-title">L2 benchmark · findings & implications</h1>
+                    <p className="page-sub">A plain-English two-page brief on what we measured, what it shows about ADI, and what it means for the team.</p>
+                  </div>
+
+                  <div className="report-stack">
+
+                    {/* ─── PAGE 1 · FINDINGS ─── */}
+                    <article className="report-page">
+                      <div className="report-meta">
+                        <span><span className="label">Page 1 of 2</span> · Findings</span>
+                        <span>Surgence Labs · ADI Foundation Audit · {D.asOf}</span>
+                      </div>
+
+                      <h2 className="report-h1">What we found</h2>
+                      <p className="report-lede">
+                        We measured ADI against the 30 most active Layer-2 chains tracked by DefiLlama, then verified ADI's on-chain TVL directly from its own RPC. The two views tell different stories. The dashboard reports both.
+                      </p>
+
+                      <h3 className="report-h2"><span className="num">01</span>How we measured it</h3>
+                      <p className="report-p">
+                        For the 30 peer L2s, we took every rollup chain DefiLlama tracks, sorted them by TVL (the dollar value of crypto held in the chain's apps), and split them into three groups: the top 5 are "Large", the next 10 are "Mid", and the next 15 are "Small". For each group we found the median of four numbers: TVL, native token market cap, daily DEX volume, and the ratio between market cap and TVL.
+                      </p>
+                      <p className="report-p">
+                        For ADI specifically, we used two TVL definitions. <b>The DefiLlama-visible view</b> counts only what their adapters index today (Uniswap V3 LPs on Ethereum: <b>{fmtUSD(adi.tvl_defillama_visible)}</b>). <b>The on-chain view</b> adds the DDSC stablecoin supply minted on ADI Chain, verified live via <code className="inline">eth_call totalSupply()</code> on <code className="inline">{adi.ddsc_rpc.replace('https://','')}</code>.
+                      </p>
+                      <p className="report-p">
+                        DDSC is pegged <b>1:1 to the UAE Dirham (AED)</b>, not USD. Reserves are custodied by <b>First Abu Dhabi Bank (FAB)</b>. The on-chain total of <b>{adi.ddsc_tvl_aed.toLocaleString()} DDSC</b> converts at the fixed Central Bank peg of {adi.ddsc_aed_per_usd} AED/USD to <b>{fmtUSD(adi.ddsc_tvl_usd)}</b>. This matches the team's "$33M minted DDSC" figure in the meeting notes once the peg conversion is applied.
+                      </p>
+
+                      <h3 className="report-h2"><span className="num">02</span>The headline numbers</h3>
+                      <div className="report-figures">
+                        <div className="report-fig"><div className="l">ADI TVL (on-chain)</div><div className="v">{fmtUSD(adi.tvl_with_ddsc)}</div><div className="s">incl. {fmtUSD(adi.ddsc_tvl_usd)} DDSC</div></div>
+                        <div className="report-fig"><div className="l">ADI Mcap</div><div className="v">{fmtUSD(adi.token_mcap)}</div><div className="s">vs $279M large-L2 median</div></div>
+                        <div className="report-fig"><div className="l">Mcap / TVL</div><div className="v">{fmtX(adi.mcaptvl_with_ddsc, 2)}</div><div className="s">growth-priced, above median</div></div>
+                        <div className="report-fig"><div className="l">Daily turnover</div><div className="v danger">{fmtPct(adi.turnover_vol_mc_pct)}</div><div className="s">vs &gt;1% liquid threshold</div></div>
+                      </div>
+
+                      <h3 className="report-h2"><span className="num">03</span>The two views, side by side</h3>
+                      <p className="report-p">
+                        Same Mcap, two different TVL denominators, two very different ratios.
+                      </p>
+                      <p className="report-p">
+                        <b>On-chain view (verified):</b> {fmtUSD(adi.tvl_with_ddsc)} TVL with DDSC counted, giving a Mcap/TVL ratio of <b>{fmtX(adi.mcaptvl_with_ddsc, 2)}</b>. That's growth-priced: above Mantle ({fmtX(5.83)}) and Manta ({fmtX(5.27)}), below World Chain ({fmtX(24.39)}). Not an outlier, but above the L2 median.
+                      </p>
+                      <p className="report-p">
+                        <b>DefiLlama-visible view (what the audit sees today):</b> {fmtUSD(adi.tvl_defillama_visible)} TVL, giving a Mcap/TVL ratio of <b>{fmtX(adi.mcaptvl, 0)}</b>. That looks like a 50×+ outlier alongside IOTA EVM ({fmtX(203.85)}). It looks that way because DefiLlama's adapter for ADI Chain doesn't yet index DDSC, not because the capital isn't there.
+                      </p>
+                      <div className="report-callout">
+                        <strong>The single most important number:</strong> with on-chain DDSC included, ADI's Mcap/TVL is <strong>{fmtX(adi.mcaptvl_with_ddsc, 2)}</strong>. That's a defensible position, peer to several growth-priced L2s with real but early usage. It is not the same as a mature low-ratio L2 like Arbitrum (0.30×). The widely-cited 206× audit figure is real <em>only as a measurement of what DefiLlama indexes today</em>. The right framing: ADI is growth-priced, the audit overstates the gap because of a missing adapter, and DDSC needs to grow further to bring the ratio toward the L2 median.
+                      </div>
+
+                      <h3 className="report-h2"><span className="num">04</span>The DEX volume gap is still real</h3>
+                      <p className="report-p">
+                        The DDSC reframe fixes the TVL story. It does not fix the volume story. DefiLlama still reports <b>$0/day</b> DEX volume on ADI Chain (its adapter for ADI's DEXes isn't live), and the audit's <b>$610K/day</b> aggregate cross-venue figure produces a turnover of <b>0.15% of market cap per day</b>, below the 1% conventional threshold for "illiquid."
+                      </p>
+                      <p className="report-p">
+                        That gap is also a data-layer issue if real DEX activity exists, or a real-usage issue if it doesn't. Either way it's separate from the Mcap/TVL story and needs its own answer.
+                      </p>
+
+                      <h3 className="report-h2"><span className="num">05</span>Real institutional usage is on-chain</h3>
+                      <p className="report-p">
+                        The clearest counter to "the chain has no real activity" is the IHC transaction. <b>International Holding Company</b>, Abu Dhabi-based and valued at $233B, executed a <b>$30M (110M AED) DDSC transaction on ADI Chain</b> in partnership with First Abu Dhabi Bank and Sirius International Holding. It is reported as the first major corporate-scale transfer of a UAE Central Bank-regulated digital currency.
+                      </p>
+                      <div className="report-callout">
+                        "The 110 million AED ($30 million) DDSC transaction on ADI Chain marks the start of a new era; institutional digital assets are not just feasible, but now scalable and efficient at large volumes."
+                        <br/><span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>Syed Basar Shueb, CEO, International Holding Company</span>
+                      </div>
+                      <p className="report-p">
+                        Two things this changes about the audit narrative. <b>First</b>, the "no real proof points on the flagship page" critique (Concern #4) gets a verifiable, named institutional anchor. <b>Second</b>, the $30M IHC flow is roughly the same size as the entire current DDSC supply, suggesting the chain is actively processing real corporate-scale value, not just holding minted-but-static balances.
+                      </p>
+
+                      <h3 className="report-h2"><span className="num">06</span>UAE stablecoin landscape, for context</h3>
+                      <p className="report-p">
+                        DDSC sits inside a small but growing set of AED-regulated stablecoins. Its differentiator is the institutional backing axis (IHC + FAB + Sirius) and operation on a public L2 with named regulator alignment.
+                      </p>
+                      <div className="report-callout" style={{ padding: 0, background: 'transparent', borderLeft: 'none' }}>
+                        <table className="data-table" style={{ marginTop: 4 }}>
+                          <thead>
+                            <tr>
+                              <th>Stablecoin</th>
+                              <th>Backer / institution</th>
+                              <th>Collateral</th>
+                              <th>Blockchain</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr style={{ background: 'rgba(15,157,88,0.04)', fontWeight: 600 }}>
+                              <td>DDSC</td>
+                              <td>IHC, FAB, Sirius</td>
+                              <td>AED</td>
+                              <td>ADI Chain (L2)</td>
+                            </tr>
+                            <tr>
+                              <td>AE Coin</td>
+                              <td className="muted">Al Maryah Community Bank</td>
+                              <td className="muted">AED</td>
+                              <td className="muted">Internal bank network</td>
+                            </tr>
+                            <tr>
+                              <td>AEDZ</td>
+                              <td className="muted">Zand Bank</td>
+                              <td className="muted">AED</td>
+                              <td className="muted">Public, multi-chain</td>
+                            </tr>
+                            <tr>
+                              <td>USDU</td>
+                              <td className="muted">Authorized FSRA operators</td>
+                              <td className="muted">USD</td>
+                              <td className="muted">FSRA-regulated</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="report-footer">
+                        <span>ADI · L2 Benchmark</span>
+                        <span>Sources: DefiLlama, rpc.adifoundation.ai, IHC announcement · n = 30 peer L2s</span>
+                      </div>
+                    </article>
+
+                    {/* ─── PAGE 2 · IMPLICATIONS ─── */}
+                    <article className="report-page">
+                      <div className="report-meta">
+                        <span><span className="label">Page 2 of 2</span> · Implications</span>
+                        <span>Surgence Labs · ADI Foundation Audit · {D.asOf}</span>
+                      </div>
+
+                      <h2 className="report-h1">What it means</h2>
+                      <p className="report-lede">
+                        The audit's headline number (Mcap/TVL of 206×) reflects what DefiLlama indexes today, not what's on ADI Chain. The on-chain reality, verified live via RPC, is {fmtX(adi.mcaptvl_with_ddsc, 2)}: growth-priced, above the L2 median, but not an outlier. The 90-day work is closing two gaps: getting the public data layer to catch up with on-chain TVL, and growing DDSC and DEX volume so the ratio moves toward the L2 median over time.
+                      </p>
+
+                      <h3 className="report-h2"><span className="num">01</span>The "outlier" framing is overstated, but the ratio is still above median</h3>
+                      <p className="report-p">
+                        DefiLlama's adapter for ADI Chain doesn't yet count DDSC. That single missing data point produces the entire 206× headline. Once DDSC's <b>{fmtUSD(adi.ddsc_tvl_usd)}</b> on-chain supply is included (the {adi.ddsc_tvl_aed.toLocaleString()} AED supply converted at the fixed FAB-custodied peg), the ratio drops to <b>{fmtX(adi.mcaptvl_with_ddsc, 2)}</b>: above the Mid-L2 median of {fmtX(sum.Mid.mcap_tvl_med)}, between Mantle ({fmtX(5.83)}) and World Chain ({fmtX(24.39)}). Defensible, but still ahead of where the cohort sits. The capital exists. The token is priced ahead of it.
+                      </p>
+
+                      <h3 className="report-h2"><span className="num">02</span>The biggest single fix is a data-layer one (Concern #7)</h3>
+                      <p className="report-p">
+                        Concern #4 ("token economics ahead of usage") is materially weakened by the on-chain TVL number, but not eliminated. Concern #1 ("99.28% concentration") is unchanged by the DDSC update. What's most actionable in the short term is Concern #7: every analyst sees DefiLlama's incomplete view first and forms their conclusion before they ever see the RPC. Closing that display gap moves the public ratio from 206× to ~12× overnight, with no product change required.
+                      </p>
+
+                      <h3 className="report-h2"><span className="num">03</span>The DEX volume gap is the one that's still real</h3>
+                      <p className="report-p">
+                        DDSC explains the TVL gap. It does not explain the volume gap. DefiLlama shows $0/day DEX volume on ADI Chain and the cross-venue aggregate is $610K against $418M Mcap, a 0.15% turnover. Two possibilities, and we need to know which: <b>(a)</b> ADI's DEXes have real swap activity but DefiLlama's volume adapter isn't indexing them, in which case this is the same data-layer story as DDSC, or <b>(b)</b> DEX activity is genuinely thin because the chain is early. Either is fixable, but the fix is different.
+                      </p>
+                      <p className="report-p">
+                        <b>Important nuance:</b> the volume gap is about <em>token trading</em>, not <em>chain usage</em>. IHC's $30M DDSC transaction settled on-chain is real corporate-scale value movement that doesn't show up in DEX-volume metrics at all. The right read is that ADI is processing real institutional flow even though its native-token secondary market remains thin.
+                      </p>
+
+                      <h3 className="report-h2"><span className="num">04</span>What to do this quarter</h3>
+                      <p className="report-p">
+                        Three moves, all directly tied to the data-layer story above:
+                      </p>
+                      <ol className="report-list">
+                        <li><span className="num">A</span><span><b>Get DDSC indexed by DefiLlama.</b> Submit an adapter for DDSC's <code className="inline">{adi.ddsc_contract.slice(0,10)}…</code> contract on ADI Chain. Reference implementation: a 50-line TypeScript file in <code className="inline">defillama-adapters</code>. Once merged, the public Mcap/TVL number drops from 206× to {fmtX(adi.mcaptvl_with_ddsc, 2)} for everyone, automatically, with no slide deck required.</span></li>
+                        <li><span className="num">B</span><span><b>Get DefiLlama's DEX adapter live for ADI Chain.</b> Same adapter pattern, different contracts. This closes the $0-volume display problem on the chain page. If real swap activity is below Mid-L2 standard, the adapter will show that honestly, and at that point we know the volume gap is real and needs a usage answer.</span></li>
+                        <li><span className="num">C</span><span><b>Publish the lockup &amp; vesting schedule alongside DDSC growth.</b> The on-chain 99.28% concentration is real (Concern #1). The right pairing is: <em>"the float is tight by design, here's the unlock schedule, here's the $122M of real economic activity on the chain."</em> Tight float plus live usage is a defensible posture. Tight float without visible usage is not.</span></li>
+                      </ol>
+
+                      <h3 className="report-h2"><span className="num">05</span>What the data layer cannot fix</h3>
+                      <p className="report-p">
+                        Two facts remain regardless of how well the indexers catch up:
+                      </p>
+                      <p className="report-p">
+                        <b>Float concentration is structural.</b> 99.28% in the top 10 wallets is a public fact. Even with DDSC reflected and DEX volume indexed, the cap-table reality stays until either an airdrop, a buyback, or a deliberate distribution event changes it. Disclosure makes that fact land better, but it doesn't change it.
+                      </p>
+                      <p className="report-p">
+                        <b>Turnover takes float to grow.</b> Daily volume can rise with more venue listings and tighter spreads, but sustained turnover above 1% requires more tokens in market hands. That's a Lever-1 question (distribution) more than a Lever-2 question (TVL).
+                      </p>
+
+                      <div className="report-callout">
+                        <strong>Bottom line:</strong> ADI's on-chain Mcap/TVL is <strong>{fmtX(adi.mcaptvl_with_ddsc, 2)}</strong>, growth-priced and above the L2 median but defensible: peer to Mantle, Manta, and several other early L2s with restricted distribution. IHC's <strong>$30M institutional transaction</strong> is the named proof that real corporate value is moving through the chain, not just sitting in mint balances. The audit's 206× is real but is measuring DefiLlama's adapter coverage, not ADI Chain. The 90-day work has three parts: (a) submit the DDSC adapter to DefiLlama so the public ratio matches on-chain, (b) keep DDSC issuance and other real TVL growing (the IHC flow shows institutional appetite is real) to compress the ratio toward the L2 median, and (c) address the volume gap (0.15% turnover) on its own track. Float concentration remains a separate disclosure question that the TVL story doesn't solve.
+                      </div>
+
+                      <div className="report-footer">
+                        <span>ADI · L2 Benchmark</span>
+                        <span>End of report · 2 pages</span>
+                      </div>
+                    </article>
+
+                  </div>
+                </>
+              )}
+
+            </div>
+          </div>
+
+          {/* Status bar */}
+          <div className="status-bar">
+            <div><span className="prompt">&gt;</span>datumlabs.xyz / adi-l2-benchmark</div>
+            <div>{D.rows.length} L2s · DefiLlama · {D.asOf} · Powered by DatumLabs</div>
+          </div>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

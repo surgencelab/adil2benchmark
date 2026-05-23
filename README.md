@@ -1,65 +1,103 @@
 # ADI L2 Benchmark Terminal
 
-Single-page dashboard comparing ADI Chain against the 30 most active L2/rollup chains tracked by DefiLlama. Built for the Surgence Labs / ADI Foundation differentiator audit.
+Dashboard comparing ADI Chain against the 48 most active L2/rollup chains across TVL, market cap, FDV, daily transactions, active wallets, and distribution model. Built for the Surgence Labs / ADI Foundation differentiator audit.
 
-## What it shows
+## Tech stack
 
-| Tab | Purpose |
-|---|---|
-| **Overview** | Headline KPIs (ADI TVL / Mcap / Mcap-TVL / 24h turnover), verdict callout, and ADI-vs-tier-median comparison table |
-| **Tier Benchmarks** | Median TVL / Mcap / DEX vol / Mcap-TVL / Vol-TVL for Large (top 5), Mid (6–15), Small (16–30) tiers |
-| **Mcap vs TVL** | Log–log scatter snapshot + 90-day trend chart with P25–P75 tier-median bands |
-| **Full L2 Table** | All 48 rollup chains DefiLlama tracks, ADI pinned at top, with 7d/30d momentum columns |
-| **Report** | 2-page plain-English brief on findings and implications |
+- **Vite + React 18 + TypeScript** — fast dev server, strict types, single-page app
+- **No CSS framework** — custom Bloomberg-style terminal theme in pure CSS (dark default, light toggle)
+- **Pure SVG charts** — no chart library, all visualisations are hand-rolled SVG for full theme control
+- **Python fetchers** — six scripts that pull from DefiLlama, Growthepie, CoinGecko, and ADI's own RPC, then merge into `public/data.json`
 
-## Run it
+## Run locally
 
 ```bash
-python3 -m http.server 5180
-# open http://localhost:5180/
+npm install
+npm run dev          # http://localhost:5180 — dev server with hot reload + /api/refresh endpoint
+npm run build        # production build to dist/
+npm run preview      # preview the production build
+npm run refresh-data # re-run all Python fetchers and rebuild public/data.json
 ```
 
-That's the whole stack — vanilla HTML + React via CDN + Babel Standalone. No build step.
+## Refresh data
 
-## Refresh the data
+There are two ways:
 
-`data.js` is a static JSON snapshot. To refresh from DefiLlama:
+1. **From inside the app**: click the `↻ Refresh` button in the top bar. In dev mode this POSTs to `/api/refresh` which spawns `scripts/refresh_all.py`. In production it falls back to a friendly message (you'd trigger the GitHub Actions workflow instead).
+2. **From the command line**: `npm run refresh-data` or `python3 scripts/refresh_all.py`.
 
-```bash
-python3 scripts/fetch_l2.py            # snapshot: TVL / Mcap / DEX vol per L2
-python3 scripts/fetch_l2_history.py    # 90d historical TVL + token price for trend chart
-```
-
-Both scripts hit free DefiLlama endpoints (no auth required) and write the merged dataset to `/tmp/adi_l2_benchmark_data.json`. Copy that into `data.js` as `window.ADI_L2_DATA = {...};`.
+The GitHub Actions workflow at `.github/workflows/refresh-data.yml` does the same thing on `workflow_dispatch`. Trigger it from the Actions tab or via `gh workflow run refresh-data`.
 
 ## Data sources
 
-- **Chain TVL / Mcap / native token symbol** — `api.llama.fi/chains2/Rollup`
-- **24h DEX volume per chain** — `api.llama.fi/overview/dexs/{slug}`
-- **Token market cap** — `coins.llama.fi/mcaps` (POST)
-- **Historical chain TVL** — `api.llama.fi/v2/historicalChainTvl/{name}`
-- **Historical token price** — `coins.llama.fi/chart/coingecko:{slug}?span=90&period=1d`
+| Source | What it provides |
+|---|---|
+| [DefiLlama](https://defillama.com) free API | Chain TVL, 24h DEX volume, native-token price + Mcap, 90d historical TVL + price |
+| [Growthepie](https://growthepie.xyz) free API | Daily transactions, daily active wallets, gas fees, stablecoin market cap per chain |
+| [CoinGecko](https://coingecko.com) public API | Max supply, FDV, total supply, circulating supply, 24h trading volume |
+| [ADI Chain RPC](https://rpc.adifoundation.ai) | DDSC `totalSupply()` (one `eth_call`) |
 
-ADI Token's CoinGecko slug is `adi-token`. ADI Chain isn't tracked on DefiLlama's chain list, so its TVL is treated as a constant ($2M, per the audit document's recognised Uniswap V3 liquidity).
+## Why some CoinGecko data is missing
 
-## Design system
+For chains where `fdv_usd` is empty, one of three things is true:
 
-This dashboard is built on the [`@datumlabs/dashboard-kit`](https://github.com/datumlabs/datumlabs-sdk) Terminal UI design language. The tokens, panel chrome, chart wrapper, counter cards, data tables, and status bar are ported from `dashboard-kit/src/theme/globals.css` and `dashboard-kit/src/components/*.tsx`.
+1. **The token doesn't exist yet** — Soneium, Ink, Abstract, Unichain, MegaETH, Plasma, Taiko all have chains but no public native token. CoinGecko has nothing to index.
+2. **CoinGecko hasn't priced the token** — Fraxtal (FXTL) is listed on CG but mcap/fdv are all null, probably because trading volume is too thin for CG's pricing model.
+3. **Our slug was wrong** — fixable in `scripts/fetch_activity.py`. The Movement slug was off (`movement-network` should be `movement`).
 
-## Files
+The dashboard reports `-` honestly rather than fabricating numbers. There's a dedicated **"Missing CoinGecko data"** filter in the L2 Universe view that lists which chains fall into which bucket.
+
+## Project layout
 
 ```
 adi-l2-benchmark/
-├── index.html              # the dashboard (vanilla HTML + React CDN)
-├── data.js                 # exposes window.ADI_L2_DATA
-├── branding/
-│   ├── icon.png
-│   └── logo-horizontal.png
+├── src/
+│   ├── App.tsx                  # main orchestrator (state, routing, mobile detection)
+│   ├── main.tsx                 # React mount point
+│   ├── components/
+│   │   ├── Shell.tsx            # sidebar nav, ticker, topbar, statusbar
+│   │   ├── CommandPalette.tsx   # ⌘K palette
+│   │   ├── DetailPane.tsx       # right-side chain detail with multi-metric chart
+│   │   ├── Charts.tsx           # ScatterMcapVsTvl + McapTvlTrend + ChartWrapper
+│   │   ├── L2Table.tsx          # filtered sortable table
+│   │   └── Spark.tsx            # inline sparkline + delta chip
+│   ├── pages/
+│   │   ├── Overview.tsx         # ADI KPIs + TVL composition + Where ADI sits + 90d sparkline
+│   │   ├── Charts.tsx           # scatter + trend + TVL leaderboard + heatmap
+│   │   ├── L2Universe.tsx       # cohort summary + filters + table
+│   │   └── Report.tsx           # 2-page narrative findings & implications
+│   ├── data/types.ts            # TypeScript interfaces for the dataset
+│   ├── lib/
+│   │   ├── format.ts            # number formatters (fmtUSD, fmtX, fmtPct, fmtNum, fmtDelta)
+│   │   └── hooks.ts             # useDataset, useTheme, useMetric, useMediaQuery, useGlobalShortcuts
+│   └── styles/global.css        # all CSS (theme tokens, dark/light)
+├── public/
+│   ├── data.json                # merged dataset (regenerated by scripts/refresh_all.py)
+│   └── branding/                # icons + logo
 ├── scripts/
-│   ├── fetch_l2.py         # snapshot fetch
-│   └── fetch_l2_history.py # 90d history fetch
-└── README.md
+│   ├── fetch_l2.py              # DefiLlama snapshot
+│   ├── fetch_l2_history.py      # 90d historical tier bands
+│   ├── fetch_activity.py        # Growthepie + CoinGecko snapshot
+│   ├── fetch_growthepie_history.py # per-chain 30d tx/daa/stables/fees series
+│   ├── fetch_sparklines.py      # per-token 30d CoinGecko price series
+│   ├── fetch_ddsc.py            # on-chain DDSC totalSupply
+│   └── refresh_all.py           # runs all fetchers, merges, writes public/data.json
+├── .github/workflows/refresh-data.yml  # CI refresh on workflow_dispatch
+├── legacy/                      # archived single-file static version
+├── vite.config.ts
+├── tsconfig.json
+└── package.json
 ```
+
+## Keyboard shortcuts
+
+| Key | Action |
+|---|---|
+| `1` `2` `3` `4` | Jump between Overview / Charts / L2 Universe / Report |
+| `⌘K` `Ctrl+K` `/` | Open command palette |
+| `T` | Toggle dark / light mode |
+
+The command palette also exposes metric toggle (Mcap / FDV), filter shortcuts, refresh, and external links.
 
 ## License
 
