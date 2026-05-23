@@ -13,23 +13,24 @@
        (src/theme/globals.css). Light-mode only, monospace-first.
        ════════════════════════════════════════════════════════════════ */
     :root {
-      /* Surface */
-      --background:   #F5F6F8;
-      --foreground:   #0F1115;
-      --card:         #FFFFFF;
-      --card-hover:   #F0F2F5;
-      --panel-header: #FAFBFC;
-      --border:        rgba(15,17,21,0.08);
-      --border-bright: rgba(15,17,21,0.16);
-      --text-muted:    #5B6373;
-      /* Brand accents */
-      --accent-orange: #FF6B35;
-      --accent-red:    #D6322E;
-      --accent-blue:   #3B5FE0;
-      --accent-green:  #0F9D58;
-      --accent-yellow: #D97706;
-      --accent-purple: #9B4AE0;
-      --accent-cyan:   #0090B2;
+      /* Dark terminal surface */
+      --background:   #0A0B0E;
+      --foreground:   #E8EAEF;
+      --card:         #12141A;
+      --card-hover:   #1A1D24;
+      --panel-header: #0E1014;
+      --border:        rgba(255,255,255,0.06);
+      --border-bright: rgba(255,255,255,0.14);
+      --text-muted:    #7C828F;
+      --text-dim:      #4F5460;
+      /* Brand accents, slightly brighter for dark surface */
+      --accent-orange: #FF8B4D;
+      --accent-red:    #FF5A5F;
+      --accent-blue:   #4F7CFF;
+      --accent-green:  #2ECC71;
+      --accent-yellow: #F5B544;
+      --accent-purple: #B266FF;
+      --accent-cyan:   #00CFE8;
       /* Fonts */
       --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
       --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
@@ -302,6 +303,194 @@
       .report-figures { grid-template-columns: repeat(2, 1fr); }
     }
 
+    /* ════════════════════════════════════════════════════════════════
+       Ticker bar (Bloomberg-style scrolling top strip)
+       ════════════════════════════════════════════════════════════════ */
+    .ticker {
+      background: var(--panel-header);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden; height: 32px;
+      display: flex; align-items: center;
+      font-family: var(--font-mono); font-size: 11.5px;
+      position: relative;
+    }
+    .ticker-inner {
+      display: inline-flex; gap: 28px; padding: 0 16px;
+      animation: ticker-scroll 50s linear infinite;
+      white-space: nowrap;
+    }
+    .ticker:hover .ticker-inner { animation-play-state: paused; }
+    @keyframes ticker-scroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .ticker-item { display: inline-flex; gap: 6px; align-items: center; }
+    .ticker-item .l {
+      font-size: 10px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .ticker-item .v { color: var(--foreground); font-weight: 600; }
+    .ticker-item .v.up   { color: var(--accent-green); }
+    .ticker-item .v.down { color: var(--accent-red); }
+    .ticker-item .v.warn { color: var(--accent-yellow); }
+    .ticker-sep { color: var(--text-dim); }
+
+    /* ════════════════════════════════════════════════════════════════
+       Terminal grid, Bloomberg-style multi-panel layout
+       ════════════════════════════════════════════════════════════════ */
+    .term-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 10px;
+      padding: 10px;
+    }
+    .w-3  { grid-column: span 3; }
+    .w-4  { grid-column: span 4; }
+    .w-5  { grid-column: span 5; }
+    .w-6  { grid-column: span 6; }
+    .w-7  { grid-column: span 7; }
+    .w-8  { grid-column: span 8; }
+    .w-9  { grid-column: span 9; }
+    .w-12 { grid-column: span 12; }
+
+    .widget {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      display: flex; flex-direction: column;
+      min-height: 0;
+      position: relative;
+    }
+    .widget::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      opacity: 0.32;
+    }
+    .widget-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 12px;
+      background: var(--panel-header);
+      border-bottom: 1px solid var(--border);
+      min-height: 28px;
+    }
+    .widget-title {
+      font-family: var(--font-mono);
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--accent-orange);
+    }
+    .widget-meta {
+      font-family: var(--font-mono);
+      font-size: 9.5px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .widget-body { padding: 10px 12px; overflow: auto; flex: 1; }
+    .widget-body.flush { padding: 0; }
+
+    /* Compact KPI row used inside widgets */
+    .stat-row {
+      display: flex; gap: 14px; flex-wrap: wrap;
+    }
+    .stat {
+      display: flex; flex-direction: column; gap: 2px;
+      min-width: 80px;
+    }
+    .stat .l {
+      font-family: var(--font-mono); font-size: 9px;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.1em; font-weight: 600;
+    }
+    .stat .v {
+      font-family: var(--font-mono); font-size: 17px;
+      font-weight: 700; color: var(--foreground);
+      font-variant-numeric: tabular-nums; line-height: 1.1;
+    }
+    .stat .v.warn { color: var(--accent-yellow); }
+    .stat .v.down { color: var(--accent-red); }
+    .stat .v.up   { color: var(--accent-green); }
+    .stat .s {
+      font-family: var(--font-mono); font-size: 9.5px;
+      color: var(--text-muted);
+    }
+
+    /* Dense ranking list inside a widget */
+    .rank-row {
+      display: grid; grid-template-columns: 16px 1fr auto;
+      gap: 8px; padding: 4px 0;
+      font-family: var(--font-mono); font-size: 11.5px;
+      border-bottom: 1px solid var(--border);
+      align-items: baseline;
+    }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-row .idx { color: var(--text-dim); font-size: 10px; }
+    .rank-row .name { color: var(--foreground); }
+    .rank-row .name .sym {
+      color: var(--text-muted); font-size: 10px;
+      margin-left: 4px;
+    }
+    .rank-row .val { color: var(--foreground); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .rank-row.adi .name { color: var(--accent-red); font-weight: 700; }
+    .rank-row.adi .val  { color: var(--accent-red); font-weight: 700; }
+    .rank-row .val.warn { color: var(--accent-yellow); }
+    .rank-row .val.down { color: var(--accent-red); }
+
+    /* Command palette */
+    .cmd-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.6);
+      display: flex; align-items: flex-start; justify-content: center;
+      padding-top: 80px;
+    }
+    .cmd-box {
+      width: 560px; max-width: 90vw;
+      background: var(--card); border: 1px solid var(--border-bright);
+      border-radius: 6px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+    .cmd-input {
+      width: 100%; padding: 14px 18px;
+      background: transparent; border: none; outline: none;
+      color: var(--foreground); font-family: var(--font-mono);
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .cmd-input::placeholder { color: var(--text-muted); }
+    .cmd-list { padding: 6px; max-height: 360px; overflow: auto; }
+    .cmd-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px; cursor: pointer; border-radius: 3px;
+      font-family: var(--font-mono); font-size: 12px;
+      color: var(--foreground);
+    }
+    .cmd-item:hover, .cmd-item.active {
+      background: rgba(255,139,77,0.10);
+      color: var(--accent-orange);
+    }
+    .cmd-item .kbd {
+      font-size: 10px; color: var(--text-muted);
+      padding: 1px 6px; border: 1px solid var(--border-bright);
+      border-radius: 2px; letter-spacing: 0.06em;
+    }
+
+    .cmd-hint {
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.1em; padding: 4px 10px;
+      border: 1px solid var(--border); border-radius: 3px;
+      background: var(--panel-header);
+      cursor: pointer;
+    }
+    .cmd-hint:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .cmd-hint .kbd {
+      background: rgba(255,255,255,0.06);
+      padding: 1px 5px; border-radius: 2px;
+      margin-left: 6px; color: var(--foreground);
+    }
+
+    /* Sparkline */
+    .spark { display: inline-block; vertical-align: middle; }
+
     /* Chart expanded overlay */
     .chart-expanded-bg {
       position: fixed; inset: 0; z-index: 90;
@@ -325,8 +514,8 @@
     /* Main container */
     .main-wrap { flex: 1; }
     .main-inner {
-      max-width: 1400px; margin: 0 auto;
-      padding: 20px 16px 32px;
+      max-width: 1600px; margin: 0 auto;
+      padding: 8px 6px 20px;
     }
 
     /* Status bar (footer) */
@@ -1247,18 +1436,124 @@
 
     /* ─── App shell ─────────────────────────────────────── */
     const NAV = [
-      { id: 'overview',     label: 'Overview' },
-      { id: 'distribution', label: 'Distribution' },
-      { id: 'scatter',      label: 'Mcap vs TVL' },
-      { id: 'table',        label: 'Full L2 Table' },
-      { id: 'report',       label: 'Report' },
+      { id: 'overview',     label: 'Terminal',     hotkey: '1' },
+      { id: 'distribution', label: 'Distribution', hotkey: '2' },
+      { id: 'scatter',      label: 'Charts',       hotkey: '3' },
+      { id: 'table',        label: 'L2 Universe',  hotkey: '4' },
+      { id: 'report',       label: 'Report',       hotkey: '5' },
     ];
+
+    /* ─── Command palette ────────────────────────────────── */
+    const COMMANDS = [
+      { id: 'go-overview',     label: 'Go: Terminal',          shortcut: '1', action: (set) => set('overview') },
+      { id: 'go-distribution', label: 'Go: Distribution view', shortcut: '2', action: (set) => set('distribution') },
+      { id: 'go-scatter',      label: 'Go: Charts',            shortcut: '3', action: (set) => set('scatter') },
+      { id: 'go-table',        label: 'Go: L2 Universe table', shortcut: '4', action: (set) => set('table') },
+      { id: 'go-report',       label: 'Go: Report',            shortcut: '5', action: (set) => set('report') },
+      { id: 'refresh',         label: 'Refresh data',          shortcut: 'R', action: () => window.location.reload() },
+      { id: 'github',          label: 'Open GitHub repo',      shortcut: '↗', action: () => window.open('https://github.com/surgencelab/adil2benchmark','_blank') },
+      { id: 'rpc',             label: 'Open ADI RPC explorer', shortcut: '↗', action: () => window.open('https://explorer.adifoundation.ai','_blank') },
+    ];
+
+    function CommandPalette({ open, onClose, setActive }) {
+      const [q, setQ] = useState('');
+      const [idx, setIdx] = useState(0);
+      const inputRef = React.useRef(null);
+      React.useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 50); }, [open]);
+      if (!open) return null;
+      const filtered = COMMANDS.filter(c => c.label.toLowerCase().includes(q.toLowerCase()));
+      const onKey = (e) => {
+        if (e.key === 'Escape') return onClose();
+        if (e.key === 'ArrowDown') { e.preventDefault(); setIdx(i => Math.min(i+1, filtered.length-1)); }
+        if (e.key === 'ArrowUp')   { e.preventDefault(); setIdx(i => Math.max(i-1, 0)); }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const cmd = filtered[idx];
+          if (cmd) { cmd.action(setActive); onClose(); }
+        }
+      };
+      return (
+        <div className="cmd-overlay" onClick={onClose}>
+          <div className="cmd-box" onClick={e => e.stopPropagation()}>
+            <input ref={inputRef} className="cmd-input"
+                   placeholder="Type a command or search..."
+                   value={q} onChange={e => { setQ(e.target.value); setIdx(0); }}
+                   onKeyDown={onKey} />
+            <div className="cmd-list">
+              {filtered.map((c, i) => (
+                <div key={c.id} className={`cmd-item ${i === idx ? 'active' : ''}`}
+                     onMouseEnter={() => setIdx(i)}
+                     onClick={() => { c.action(setActive); onClose(); }}>
+                  <span>{c.label}</span>
+                  <span className="kbd">{c.shortcut}</span>
+                </div>
+              ))}
+              {filtered.length === 0 && (
+                <div className="cmd-item" style={{ color: 'var(--text-muted)' }}>No commands match</div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ─── Ticker bar ─────────────────────────────────────── */
+    function TickerBar({ adi, sum }) {
+      const items = [
+        { l: 'ADI MC',      v: fmtUSD(adi.token_mcap),       cls: '' },
+        { l: 'ADI TVL',     v: fmtUSD(adi.tvl_with_ddsc),    cls: '' },
+        { l: 'MC/TVL',      v: fmtX(adi.mcaptvl_with_ddsc,2),cls: 'warn' },
+        { l: 'FDV',         v: fmtUSD(adi.fdv_usd),          cls: '' },
+        { l: 'FDV/TVL',     v: adi.fdv_usd ? fmtX(adi.fdv_usd / adi.tvl_with_ddsc, 1) : '-', cls: 'warn' },
+        { l: 'DDSC',        v: fmtUSD(adi.ddsc_tvl_usd),     cls: 'up' },
+        { l: 'DEFILLAMA VIEW', v: fmtX(adi.mcaptvl,0),       cls: 'down' },
+        { l: '24H TURNOVER',v: fmtPct(adi.turnover_vol_mc_pct,2), cls: 'down' },
+        { l: 'L2s TRACKED', v: D.rows.length,                 cls: '' },
+        { l: 'MID-L2 MED',  v: fmtX(sum.Mid.mcap_tvl_med,2),  cls: '' },
+        { l: 'LARGE-L2 MED',v: fmtX(sum.Large.mcap_tvl_med,2),cls: '' },
+      ];
+      // Duplicate for seamless infinite scroll
+      const display = [...items, ...items];
+      return (
+        <div className="ticker">
+          <div className="ticker-inner">
+            {display.map((it, i) => (
+              <span key={i} className="ticker-item">
+                <span className="l">{it.l}</span>
+                <span className={`v ${it.cls}`}>{it.v}</span>
+                {i < display.length - 1 && <span className="ticker-sep">·</span>}
+              </span>
+            ))}
+          </div>
+        </div>
+      );
+    }
 
     function App() {
       const [active, setActive] = useState('overview');
       const [exporting, setExporting] = useState(false);
+      const [cmdOpen, setCmdOpen] = useState(false);
       const adi = D.adi;
       const sum = D.tierSummary;
+      const C = D.cohorts || {};
+
+      // Global keyboard shortcuts
+      React.useEffect(() => {
+        const onKey = (e) => {
+          const tag = e.target.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault(); setCmdOpen(true); return;
+          }
+          if (e.key === '/') { e.preventDefault(); setCmdOpen(true); return; }
+          if (/^[1-5]$/.test(e.key)) {
+            const nav = NAV.find(n => n.hotkey === e.key);
+            if (nav) setActive(nav.id);
+          }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, []);
 
       const exportPNG = async () => {
         if (exporting) return;
@@ -1298,167 +1593,225 @@
                 <div className="nav-items">
                   {NAV.map(n => (
                     <a key={n.id} className={`nav-link${active === n.id ? ' active' : ''}`}
+                       title={`Press ${n.hotkey}`}
                        onClick={e => { e.preventDefault(); setActive(n.id); }}>{n.label}</a>
                   ))}
                 </div>
-                <button className="export-btn" onClick={exportPNG} disabled={exporting} title="Export current tab as PNG">
-                  {exporting ? '⋯ Rendering' : '⬇ Export PNG'}
+                <span className="cmd-hint" onClick={() => setCmdOpen(true)} title="Open command palette (⌘K or /)">
+                  ⌘K<span className="kbd">/</span>
+                </span>
+                <button className="export-btn" onClick={exportPNG} disabled={exporting} title="Export current view as PNG">
+                  {exporting ? '⋯' : '⬇ PNG'}
                 </button>
-                <span className="live-pill"><span className="live-dot" />LIVE</span>
+                <span className="live-pill"><span className="live-dot" />LIVE · {D.asOf}</span>
               </div>
             </div>
           </nav>
+
+          {/* Ticker bar (Bloomberg-style) */}
+          <TickerBar adi={adi} sum={sum} />
+
+          {/* Command palette */}
+          <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} setActive={setActive} />
 
           {/* Main */}
           <div className="main-wrap">
             <div className="main-inner">
 
-              {active === 'overview' && (
-                <>
-                  <div className="page-header" style={{ marginBottom: 12 }}>
-                    <div className="page-eyebrow">Surgence Labs / ADI Foundation Audit</div>
-                    <h1 className="page-title" style={{ fontSize: 22 }}>L2 Benchmark</h1>
-                  </div>
+              {active === 'overview' && (() => {
+                // Pre-compute lists used inside widgets
+                const topByMcapTvl = [...D.rows]
+                  .filter(r => r.chain_mcap && r.tvl)
+                  .map(r => ({...r, _mt: r.chain_mcap/r.tvl}))
+                  .sort((a,b) => b._mt - a._mt)
+                  .slice(0, 10);
+                const topByTvl = [...D.rows]
+                  .filter(r => r.tvl > 0)
+                  .sort((a,b) => b.tvl - a.tvl)
+                  .slice(0, 10);
+                const nonAirdrop = D.rows.filter(r => r.has_token && !r.airdrop_distributed)
+                  .sort((a,b) => (b.chain_mcap||0) - (a.chain_mcap||0));
+                const adiMT = adi.mcaptvl_with_ddsc;
 
-                  <div className="section" style={{ marginBottom: 14 }}>
-                    <div className="meta-strip">
-                      <span className="kv"><span className="k">Audit ref</span><span className="v"><code className="inline">$610K vol · $418M MC · 0.15% turnover</code></span></span>
-                      <span className="kv"><span className="k">Universe</span><span className="v">{D.rows.length} L2s</span></span>
-                      <span className="kv"><span className="k">Source</span><span className="v">DefiLlama + ADI RPC + Growthepie + CoinGecko</span></span>
-                      <span className="kv"><span className="k">Pulled</span><span className="v">{D.asOf}</span></span>
+                return (
+                  <div className="term-grid">
+                    {/* ────────── ROW 1: ADI snapshot ────────── */}
+                    <div className="widget w-4">
+                      <div className="widget-head">
+                        <span className="widget-title">ADI · key metrics</span>
+                        <span className="widget-meta">On-chain · verified</span>
+                      </div>
+                      <div className="widget-body">
+                        <div className="stat-row" style={{ marginBottom: 12 }}>
+                          <div className="stat"><div className="l">Mcap</div><div className="v">{fmtUSD(adi.token_mcap)}</div><div className="s">CG · Kraken</div></div>
+                          <div className="stat"><div className="l">TVL (on-chain)</div><div className="v">{fmtUSD(adi.tvl_with_ddsc)}</div><div className="s">incl. DDSC</div></div>
+                          <div className="stat"><div className="l">FDV</div><div className="v">{fmtUSD(adi.fdv_usd)}</div><div className="s">1B max supply</div></div>
+                        </div>
+                        <div className="stat-row">
+                          <div className="stat"><div className="l">Mcap/TVL</div><div className="v warn">{fmtX(adiMT,2)}</div><div className="s">Mid med {fmtX(sum.Mid.mcap_tvl_med,2)}</div></div>
+                          <div className="stat"><div className="l">FDV/TVL</div><div className="v warn">{fmtX(adi.fdv_usd/adi.tvl_with_ddsc,1)}</div><div className="s">unlock overhang</div></div>
+                          <div className="stat"><div className="l">24h turnover</div><div className="v down">{fmtPct(adi.turnover_vol_mc_pct,2)}</div><div className="s">below 1% illiquid</div></div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  <Divider label="ADI at a glance · on-chain verified" />
-                  <div className="section grid-4">
-                    <Counter label="ADI TVL (on-chain)" value={fmtUSD(adi.tvl_with_ddsc)} sub={`incl. ${fmtUSD(adi.ddsc_tvl_usd)} DDSC, RPC verified`} />
-                    <Counter label="ADI Token Mcap" value={fmtUSD(adi.token_mcap)} sub="CoinGecko · Kraken" />
-                    <Counter label="Mcap / TVL" value={fmtX(adi.mcaptvl_with_ddsc, 2)} sub={`Mid-L2 median ${fmtX(sum.Mid.mcap_tvl_med)} · DefiLlama view: ${fmtX(adi.mcaptvl, 0)}`} />
-                    <Counter danger label="Vol / Mcap (24h)" value={fmtPct(adi.turnover_vol_mc_pct, 2)} sub="Aggregate vol all venues" />
-                  </div>
+                    <div className="widget w-4">
+                      <div className="widget-head">
+                        <span className="widget-title">TVL composition</span>
+                        <span className="widget-meta">rpc.adifoundation.ai</span>
+                      </div>
+                      <div className="widget-body flush">
+                        <table className="data-table">
+                          <thead><tr><th>Component</th><th className="right">USD</th><th>Verification</th></tr></thead>
+                          <tbody>
+                            <tr><td>Uniswap V3 LP</td><td className="right">{fmtUSD(adi.tvl_defillama_visible)}</td><td className="muted">DefiLlama</td></tr>
+                            <tr><td>DDSC (1 AED peg, FAB)</td><td className="right">{fmtUSD(adi.ddsc_tvl_usd)}</td><td className="muted">eth_call</td></tr>
+                            <tr style={{ background: 'rgba(255,139,77,0.08)', fontWeight: 600 }}>
+                              <td>Total</td><td className="right">{fmtUSD(adi.tvl_with_ddsc)}</td><td className="muted">sum</td></tr>
+                            <tr><td className="muted">DefiLlama view (no DDSC)</td><td className="right" style={{ color: 'var(--accent-red)' }}>{fmtUSD(adi.tvl_defillama_visible)}</td><td className="muted">audit ref</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
 
-                  <Divider label="TVL composition" />
-                  <div className="section">
-                    <TuiPanel title="What's actually on ADI Chain" badge={`Verified via ${adi.ddsc_rpc.replace('https://','')}`} flush>
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th>Component</th>
-                            <th>Asset / peg</th>
-                            <th className="right">Native units</th>
-                            <th className="right">USD value</th>
-                            <th>Verification</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td>Uniswap V3 active liquidity</td>
-                            <td className="muted">ADI / USDC + ADI / WETH (Ethereum)</td>
-                            <td className="right muted">-</td>
-                            <td className="right">{fmtUSD(adi.tvl_defillama_visible)}</td>
-                            <td className="muted">DefiLlama yields page</td>
-                          </tr>
-                          <tr>
-                            <td>DDSC stablecoin issued</td>
-                            <td className="muted">1 DDSC = 1 AED · reserves at FAB</td>
-                            <td className="right">{adi.ddsc_tvl_aed.toLocaleString(undefined,{maximumFractionDigits:0})} AED</td>
-                            <td className="right">{fmtUSD(adi.ddsc_tvl_usd)}</td>
-                            <td className="muted">eth_call totalSupply()</td>
-                          </tr>
-                          <tr style={{ background: 'rgba(255,107,53,0.05)', fontWeight: 600 }}>
-                            <td>Total on-chain TVL</td>
-                            <td className="muted">USD-converted at {adi.ddsc_aed_per_usd} AED/USD</td>
-                            <td className="right muted">-</td>
-                            <td className="right">{fmtUSD(adi.tvl_with_ddsc)}</td>
-                            <td className="muted">Sum, refreshed daily</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </TuiPanel>
-                  </div>
+                    <div className="widget w-4">
+                      <div className="widget-head">
+                        <span className="widget-title">Distribution</span>
+                        <span className="widget-meta">{D.rows.length} L2s tagged</span>
+                      </div>
+                      <div className="widget-body">
+                        <div className="stat-row" style={{ marginBottom: 10 }}>
+                          <div className="stat"><div className="l">Airdrop</div><div className="v">{C.Airdrop?.n}</div><div className="s">med M/T {fmtX(C.Airdrop?.mcap_tvl_med,2)}</div></div>
+                          <div className="stat"><div className="l">Non-airdrop</div><div className="v down">{C.NonAirdrop?.n}</div><div className="s">med M/T {fmtX(C.NonAirdrop?.mcap_tvl_med,2)}</div></div>
+                          <div className="stat"><div className="l">No token</div><div className="v">{C.NoToken?.n}</div><div className="s">med TVL {fmtUSD(C.NoToken?.tvl_med)}</div></div>
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                          ADI sits in the <b style={{ color: 'var(--accent-red)' }}>non-airdrop cohort</b>. Its M/T of <b style={{ color: 'var(--accent-yellow)' }}>{fmtX(adiMT,2)}</b> is {(adiMT/(C.NonAirdrop?.mcap_tvl_med||1)).toFixed(1)}× the cohort median.
+                        </div>
+                      </div>
+                    </div>
 
-                  <Divider label="L2 tier medians · all 30 active L2s" />
-                  <div className="section">
-                    <TierBenchmarks summary={sum} />
-                  </div>
+                    {/* ────────── ROW 2: Tier benchmarks ────────── */}
+                    <div className="widget w-12">
+                      <div className="widget-head">
+                        <span className="widget-title">L2 tier medians</span>
+                        <span className="widget-meta">30 active L2s · auto-bucketed by TVL</span>
+                      </div>
+                      <div className="widget-body flush">
+                        <table className="data-table">
+                          <thead>
+                            <tr>
+                              <th>Tier</th>
+                              <th className="right">n</th>
+                              <th className="right">TVL med</th>
+                              <th className="right">Mcap med</th>
+                              <th className="right">24h DEX</th>
+                              <th className="right">M/T med</th>
+                              <th className="right">V/T med</th>
+                              <th>Position of ADI</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[
+                              ['Large', sum.Large, 'top 5'],
+                              ['Mid',   sum.Mid,   '6-15'],
+                              ['Small', sum.Small, '16-30'],
+                            ].map(([t, s, sub]) => (
+                              <tr key={t}>
+                                <td>{t}<span className="muted" style={{ marginLeft: 6, fontSize: 10 }}>{sub}</span></td>
+                                <td className="right">{s.n}</td>
+                                <td className="right">{fmtUSD(s.tvl_med)}</td>
+                                <td className="right">{fmtUSD(s.mcap_med)}</td>
+                                <td className="right">{fmtUSD(s.dex_v24_med, 2)}</td>
+                                <td className="right">{fmtX(s.mcap_tvl_med, 2)}</td>
+                                <td className="right">{fmtPct(s.vol_tvl_pct_med, 2)}</td>
+                                <td className="muted" style={{ fontSize: 10.5 }}>
+                                  {adiMT > s.mcap_tvl_med
+                                    ? `ADI M/T ${(adiMT/s.mcap_tvl_med).toFixed(1)}× this tier`
+                                    : `ADI M/T below this tier`}
+                                </td>
+                              </tr>
+                            ))}
+                            <tr style={{ background: 'rgba(255,90,95,0.08)', fontWeight: 600 }}>
+                              <td style={{ color: 'var(--accent-red)' }}>ADI Chain</td>
+                              <td className="right muted">1</td>
+                              <td className="right" style={{ color: 'var(--accent-red)' }}>{fmtUSD(adi.tvl_with_ddsc)}</td>
+                              <td className="right" style={{ color: 'var(--accent-red)' }}>{fmtUSD(adi.token_mcap)}</td>
+                              <td className="right" style={{ color: 'var(--accent-red)' }}>{fmtUSD(adi.dex_v24, 2)}</td>
+                              <td className="right" style={{ color: 'var(--accent-red)' }}>{fmtX(adiMT,2)}</td>
+                              <td className="right" style={{ color: 'var(--accent-red)' }}>0.00%</td>
+                              <td className="muted" style={{ fontSize: 10.5, color: 'var(--accent-red)' }}>private distribution, on-chain DDSC</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
 
-                  <Divider label="ADI vs L2 tier benchmarks" />
-                  <div className="section">
-                    <TuiPanel title="Side-by-side comparison" badge="DefiLlama view in red, on-chain view in green" flush>
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th>Metric</th>
-                            <th className="right">ADI Today</th>
-                            <th className="right">Small L2 median</th>
-                            <th className="right">Mid L2 median</th>
-                            <th className="right">Large L2 median</th>
-                            <th className="right">Read</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td>TVL (on-chain, incl. DDSC)</td>
-                            <td className="right">{fmtUSD(adi.tvl_with_ddsc)}</td>
-                            <td className="right">{fmtUSD(sum.Small.tvl_med)}</td>
-                            <td className="right">{fmtUSD(sum.Mid.tvl_med)}</td>
-                            <td className="right">{fmtUSD(sum.Large.tvl_med)}</td>
-                            <td className="right">Above small-L2 median</td>
-                          </tr>
-                          <tr>
-                            <td>TVL (DefiLlama-visible only)<div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.04em', marginTop: 3 }}>Uniswap LPs on Ethereum, no DDSC</div></td>
-                            <td className="right danger">{fmtUSD(adi.tvl_defillama_visible)}</td>
-                            <td className="right">{fmtUSD(sum.Small.tvl_med)}</td>
-                            <td className="right">{fmtUSD(sum.Mid.tvl_med)}</td>
-                            <td className="right">{fmtUSD(sum.Large.tvl_med)}</td>
-                            <td className="right danger">Measurement gap, not a fundamentals gap</td>
-                          </tr>
-                          <tr>
-                            <td>Token Mcap</td>
-                            <td className="right">{fmtUSD(adi.token_mcap)}</td>
-                            <td className="right">{fmtUSD(sum.Small.mcap_med)}</td>
-                            <td className="right">{fmtUSD(sum.Mid.mcap_med)}</td>
-                            <td className="right">{fmtUSD(sum.Large.mcap_med)}</td>
-                            <td className="right">Above LARGE-L2 median</td>
-                          </tr>
-                          <tr>
-                            <td>24h DEX Volume</td>
-                            <td className="right danger">{fmtUSD(adi.dex_v24, 2)}</td>
-                            <td className="right">{fmtUSD(sum.Small.dex_v24_med, 2)}</td>
-                            <td className="right">{fmtUSD(sum.Mid.dex_v24_med, 2)}</td>
-                            <td className="right">{fmtUSD(sum.Large.dex_v24_med, 2)}</td>
-                            <td className="right danger">Zero · adapter not yet indexing</td>
-                          </tr>
-                          <tr>
-                            <td>Mcap / TVL ratio (on-chain)</td>
-                            <td className="right">{fmtX(adi.mcaptvl_with_ddsc, 2)}</td>
-                            <td className="right">{fmtX(sum.Small.mcap_tvl_med)}</td>
-                            <td className="right">{fmtX(sum.Mid.mcap_tvl_med)}</td>
-                            <td className="right">{fmtX(sum.Large.mcap_tvl_med)}</td>
-                            <td className="right">Growth-priced, above median</td>
-                          </tr>
-                          <tr>
-                            <td>Mcap / TVL ratio (DefiLlama view)<div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.04em', marginTop: 3 }}>Without DDSC counted</div></td>
-                            <td className="right danger">{fmtX(adi.mcaptvl, 0)}</td>
-                            <td className="right">{fmtX(sum.Small.mcap_tvl_med)}</td>
-                            <td className="right">{fmtX(sum.Mid.mcap_tvl_med)}</td>
-                            <td className="right">{fmtX(sum.Large.mcap_tvl_med)}</td>
-                            <td className="right danger">What the audit sees today</td>
-                          </tr>
-                          <tr>
-                            <td>Daily Vol / Mcap turnover<div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.04em', marginTop: 3 }}>Healthy L2 tokens: 5–25% / day across all venues</div></td>
-                            <td className="right danger">{fmtPct(adi.turnover_vol_mc_pct)}</td>
-                            <td className="right muted">-</td>
-                            <td className="right muted">-</td>
-                            <td className="right muted">-</td>
-                            <td className="right danger">Below 1% · illiquid</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </TuiPanel>
+                    {/* ────────── ROW 3: Rankings (left), Non-airdrop peers (right) ────────── */}
+                    <div className="widget w-4">
+                      <div className="widget-head">
+                        <span className="widget-title">Top 10 · Mcap/TVL</span>
+                        <span className="widget-meta">priciest tokens vs usage</span>
+                      </div>
+                      <div className="widget-body" style={{ paddingTop: 4 }}>
+                        {topByMcapTvl.map((r, i) => (
+                          <div key={r.name} className="rank-row">
+                            <span className="idx">{i+1}</span>
+                            <span className="name">{r.name}<span className="sym">{r.symbol}</span></span>
+                            <span className={`val ${r._mt > 50 ? 'down' : r._mt > 10 ? 'warn' : ''}`}>{fmtX(r._mt,2)}</span>
+                          </div>
+                        ))}
+                        <div className="rank-row adi">
+                          <span className="idx">·</span>
+                          <span className="name">ADI Chain<span className="sym">ADI</span></span>
+                          <span className="val">{fmtX(adiMT,2)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="widget w-4">
+                      <div className="widget-head">
+                        <span className="widget-title">Top 10 · TVL</span>
+                        <span className="widget-meta">largest L2 economies</span>
+                      </div>
+                      <div className="widget-body" style={{ paddingTop: 4 }}>
+                        {topByTvl.map((r, i) => (
+                          <div key={r.name} className="rank-row">
+                            <span className="idx">{i+1}</span>
+                            <span className="name">{r.name}<span className="sym">{r.symbol || '-'}</span></span>
+                            <span className="val">{fmtUSD(r.tvl)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="widget w-4">
+                      <div className="widget-head">
+                        <span className="widget-title">Non-airdrop peers</span>
+                        <span className="widget-meta">ADI's cohort</span>
+                      </div>
+                      <div className="widget-body" style={{ paddingTop: 4 }}>
+                        <div className="rank-row adi">
+                          <span className="idx">·</span>
+                          <span className="name">ADI Chain<span className="sym">ADI</span></span>
+                          <span className="val">{fmtX(adiMT,2)} M/T</span>
+                        </div>
+                        {nonAirdrop.map((r) => {
+                          const mt = r.chain_mcap && r.tvl ? r.chain_mcap/r.tvl : null;
+                          return (
+                            <div key={r.name} className="rank-row">
+                              <span className="idx">·</span>
+                              <span className="name">{r.name}<span className="sym">{r.symbol}</span></span>
+                              <span className={`val ${mt > 50 ? 'down' : mt > 10 ? 'warn' : ''}`}>{mt ? fmtX(mt,2) : '-'} M/T</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                   </div>
-                </>
-              )}
+                );
+              })()}
 
 
               {active === 'distribution' && (() => {
