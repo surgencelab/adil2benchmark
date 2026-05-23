@@ -724,24 +724,51 @@
       const grouped = { Large: [], Mid: [], Small: [], Micro: [] };
       rows.forEach(r => (grouped[r.tier] || grouped.Micro).push(r));
 
+      const distLabel = {
+        airdrop:      'AIRDROP',
+        no_token:     'NO TOKEN',
+        token_swap:   'TOKEN SWAP',
+        fair_launch:  'FAIR LAUNCH',
+        private_only: 'PRIVATE',
+      };
+      const distColor = {
+        airdrop:      'var(--accent-green)',
+        no_token:     'var(--text-muted)',
+        token_swap:   'var(--accent-blue)',
+        fair_launch:  'var(--accent-cyan)',
+        private_only: 'var(--accent-red)',
+      };
+      const DistChip = ({ kind }) => kind ? (
+        <span style={{
+          display: 'inline-block', padding: '1px 6px', fontSize: 9,
+          fontFamily: 'var(--font-mono)', fontWeight: 600, letterSpacing: '0.08em',
+          border: `1px solid ${distColor[kind]}`, borderRadius: 2,
+          color: distColor[kind], background: 'transparent',
+        }}>{distLabel[kind]}</span>
+      ) : null;
+
       const renderRow = (r, isAdi=false) => {
-        const tvl = r.tvl;
+        const tvl = isAdi ? r.tvl_with_ddsc : r.tvl;
         const mcap = isAdi ? r.token_mcap : (r.chain_mcap || r.token_mcap);
+        const fdv = r.fdv_usd;
         const dex = r.dex_v24;
-        const mcaptvl = (mcap != null && tvl > 0) ? mcap/tvl : null;
+        const mcaptvl = isAdi ? r.mcaptvl_with_ddsc : ((mcap != null && tvl > 0) ? mcap/tvl : null);
+        const fdvtvl  = (fdv != null && tvl > 0) ? fdv/tvl : null;
         const voltvl = (dex != null && tvl > 0) ? (dex/tvl*100) : null;
         return (
           <tr key={r.name + (isAdi ? '-adi' : '')} className={isAdi ? 'row-adi' : ''}>
             <td>{r.name}</td>
             <td className="muted">{r.symbol || '-'}</td>
+            <td><DistChip kind={r.distribution_model} /></td>
             <td className="right">{fmtUSD(tvl)}</td>
-            <td className="right">{fmtDelta(r.tvl_chg_7d)}</td>
-            <td className="right">{fmtDelta(r.tvl_chg_30d)}</td>
             <td className="right">{fmtUSD(mcap)}</td>
-            <td className="right">{fmtDelta(r.price_chg_30d)}</td>
-            <td className="right">{fmtUSD(dex, 2)}</td>
+            <td className="right">{fmtUSD(fdv)}</td>
             <td className="right">{mcaptvl == null ? '-' :
               <span className={mcaptvl > 50 ? 'danger' : ''}>{fmtX(mcaptvl)}</span>}</td>
+            <td className="right">{fdvtvl == null ? '-' : <span className={fdvtvl > 100 ? 'danger' : ''}>{fmtX(fdvtvl)}</span>}</td>
+            <td className="right">{r.tx_per_day == null ? '-' : Number(r.tx_per_day).toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+            <td className="right">{r.active_wallets_per_day == null ? '-' : Number(r.active_wallets_per_day).toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+            <td className="right">{fmtUSD(dex, 2)}</td>
             <td className="right">{voltvl == null ? '-' :
               <span className={voltvl === 0 ? 'danger' : ''}>{fmtPct(voltvl)}</span>}</td>
           </tr>
@@ -755,22 +782,24 @@
               <tr>
                 <th>Chain</th>
                 <th>Token</th>
+                <th>Distribution</th>
                 <th className="right">TVL</th>
-                <th className="right">Δ 7d</th>
-                <th className="right">Δ 30d</th>
                 <th className="right">Mcap</th>
-                <th className="right">Px Δ 30d</th>
-                <th className="right">24h DEX</th>
+                <th className="right">FDV</th>
                 <th className="right">Mcap / TVL</th>
+                <th className="right">FDV / TVL</th>
+                <th className="right">Tx / day</th>
+                <th className="right">Active wallets</th>
+                <th className="right">24h DEX</th>
                 <th className="right">Vol / TVL</th>
               </tr>
             </thead>
             <tbody>
-              <tr className="row-section"><td colSpan="10">// ADI Chain · audit subject</td></tr>
+              <tr className="row-section"><td colSpan="12">// ADI Chain · audit subject</td></tr>
               {renderRow(adi, true)}
               {['Large','Mid','Small','Micro'].map(tier => (
                 <React.Fragment key={tier}>
-                  <tr className="row-section"><td colSpan="10">// {tier} L2s · {grouped[tier].length} chains</td></tr>
+                  <tr className="row-section"><td colSpan="12">// {tier} L2s · {grouped[tier].length} chains</td></tr>
                   {grouped[tier].map(r => renderRow(r))}
                 </React.Fragment>
               ))}
@@ -1231,11 +1260,12 @@
 
     /* ─── App shell ─────────────────────────────────────── */
     const NAV = [
-      { id: 'overview', label: 'Overview' },
-      { id: 'tiers',    label: 'Tier Benchmarks' },
-      { id: 'scatter',  label: 'Mcap vs TVL' },
-      { id: 'table',    label: 'Full L2 Table' },
-      { id: 'report',   label: 'Report' },
+      { id: 'overview',     label: 'Overview' },
+      { id: 'tiers',        label: 'Tier Benchmarks' },
+      { id: 'distribution', label: 'Distribution' },
+      { id: 'scatter',      label: 'Mcap vs TVL' },
+      { id: 'table',        label: 'Full L2 Table' },
+      { id: 'report',       label: 'Report' },
     ];
 
     function App() {
@@ -1493,6 +1523,149 @@
                   </div>
                 </>
               )}
+
+              {active === 'distribution' && (() => {
+                const C = D.cohorts || {};
+                const fmt = v => v == null ? '-' : fmtX(v, 2);
+                const fmtN = v => v == null ? '-' : Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
+                return (
+                  <>
+                    <div className="page-header">
+                      <div className="page-eyebrow">Distribution Model</div>
+                      <h1 className="page-title">Airdrop vs non-airdrop L2s</h1>
+                      <p className="page-sub">L2s with public token distribution (airdrop) tend to have wider float and lower Mcap/TVL ratios. L2s without one tend to be priced ahead of usage. ADI sits in the non-airdrop cohort with restricted distribution.</p>
+                    </div>
+
+                    <div className="section grid-3">
+                      <div className="tui-panel">
+                        <div className="tui-panel-header">
+                          <span className="tui-panel-title">Airdrop L2s</span>
+                          <span className="tui-panel-badge">n = {C.Airdrop?.n ?? '-'}</span>
+                        </div>
+                        <div className="tui-panel-body">
+                          <div className="tier-rows">
+                            <div className="tier-row"><span className="k">Mcap / TVL median</span><span className="v">{fmt(C.Airdrop?.mcap_tvl_med)}</span></div>
+                            <div className="tier-row"><span className="k">FDV / TVL median</span><span className="v">{fmt(C.Airdrop?.fdv_tvl_med)}</span></div>
+                            <div className="tier-row"><span className="k">TVL median</span><span className="v">{fmtUSD(C.Airdrop?.tvl_med)}</span></div>
+                            <div className="tier-row"><span className="k">Mcap median</span><span className="v">{fmtUSD(C.Airdrop?.mcap_med)}</span></div>
+                            <div className="tier-row"><span className="k">FDV median</span><span className="v">{fmtUSD(C.Airdrop?.fdv_med)}</span></div>
+                            <div className="tier-row"><span className="k">Tx / day median</span><span className="v">{fmtN(C.Airdrop?.tx_per_day_med)}</span></div>
+                            <div className="tier-row"><span className="k">Active wallets / day</span><span className="v">{fmtN(C.Airdrop?.daa_med)}</span></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="tui-panel" style={{ borderColor: 'var(--accent-red)' }}>
+                        <div className="tui-panel-header">
+                          <span className="tui-panel-title" style={{ color: 'var(--accent-red)' }}>Non-airdrop L2s (have token)</span>
+                          <span className="tui-panel-badge">n = {C.NonAirdrop?.n ?? '-'}</span>
+                        </div>
+                        <div className="tui-panel-body">
+                          <div className="tier-rows">
+                            <div className="tier-row"><span className="k">Mcap / TVL median</span><span className="v" style={{ color: 'var(--accent-red)' }}>{fmt(C.NonAirdrop?.mcap_tvl_med)}</span></div>
+                            <div className="tier-row"><span className="k">FDV / TVL median</span><span className="v">{fmt(C.NonAirdrop?.fdv_tvl_med)}</span></div>
+                            <div className="tier-row"><span className="k">TVL median</span><span className="v">{fmtUSD(C.NonAirdrop?.tvl_med)}</span></div>
+                            <div className="tier-row"><span className="k">Mcap median</span><span className="v">{fmtUSD(C.NonAirdrop?.mcap_med)}</span></div>
+                            <div className="tier-row"><span className="k">FDV median</span><span className="v">{fmtUSD(C.NonAirdrop?.fdv_med)}</span></div>
+                            <div className="tier-row"><span className="k">Tx / day median</span><span className="v">{fmtN(C.NonAirdrop?.tx_per_day_med)}</span></div>
+                            <div className="tier-row"><span className="k">Active wallets / day</span><span className="v">{fmtN(C.NonAirdrop?.daa_med)}</span></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="tui-panel">
+                        <div className="tui-panel-header">
+                          <span className="tui-panel-title">No-token L2s</span>
+                          <span className="tui-panel-badge">n = {C.NoToken?.n ?? '-'}</span>
+                        </div>
+                        <div className="tui-panel-body">
+                          <div className="tier-rows">
+                            <div className="tier-row"><span className="k">Mcap / TVL median</span><span className="v muted">N/A</span></div>
+                            <div className="tier-row"><span className="k">FDV / TVL median</span><span className="v muted">N/A</span></div>
+                            <div className="tier-row"><span className="k">TVL median</span><span className="v">{fmtUSD(C.NoToken?.tvl_med)}</span></div>
+                            <div className="tier-row"><span className="k">Mcap median</span><span className="v muted">no token</span></div>
+                            <div className="tier-row"><span className="k">FDV median</span><span className="v muted">no token</span></div>
+                            <div className="tier-row"><span className="k">Tx / day median</span><span className="v">{fmtN(C.NoToken?.tx_per_day_med)}</span></div>
+                            <div className="tier-row"><span className="k">Active wallets / day</span><span className="v">{fmtN(C.NoToken?.daa_med)}</span></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Divider label="Where ADI sits in this lens" />
+                    <div className="section">
+                      <TuiPanel title="ADI vs cohort medians" badge="Non-airdrop is the right peer set" flush>
+                        <table className="data-table">
+                          <thead>
+                            <tr>
+                              <th>Metric</th>
+                              <th className="right">ADI today</th>
+                              <th className="right">Non-airdrop median</th>
+                              <th className="right">Airdrop median</th>
+                              <th className="right">No-token median</th>
+                              <th className="right">Read</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td>Mcap / TVL (on-chain, incl. DDSC)</td>
+                              <td className="right">{fmtX(adi.mcaptvl_with_ddsc, 2)}</td>
+                              <td className="right">{fmt(C.NonAirdrop?.mcap_tvl_med)}</td>
+                              <td className="right">{fmt(C.Airdrop?.mcap_tvl_med)}</td>
+                              <td className="right muted">N/A</td>
+                              <td className="right">{(adi.mcaptvl_with_ddsc / (C.NonAirdrop?.mcap_tvl_med || 1)).toFixed(1)}× the non-airdrop median</td>
+                            </tr>
+                            <tr>
+                              <td>FDV (max_supply × price)</td>
+                              <td className="right">{fmtUSD(adi.fdv_usd)}</td>
+                              <td className="right">{fmtUSD(C.NonAirdrop?.fdv_med)}</td>
+                              <td className="right">{fmtUSD(C.Airdrop?.fdv_med)}</td>
+                              <td className="right muted">N/A</td>
+                              <td className="right">{adi.fdv_usd && C.NonAirdrop?.fdv_med ? `${(adi.fdv_usd / C.NonAirdrop.fdv_med).toFixed(1)}× the non-airdrop median` : '-'}</td>
+                            </tr>
+                            <tr>
+                              <td>FDV / TVL ratio</td>
+                              <td className="right">{adi.fdv_usd && adi.tvl_with_ddsc ? fmtX(adi.fdv_usd / adi.tvl_with_ddsc, 1) : '-'}</td>
+                              <td className="right">{fmt(C.NonAirdrop?.fdv_tvl_med)}</td>
+                              <td className="right">{fmt(C.Airdrop?.fdv_tvl_med)}</td>
+                              <td className="right muted">N/A</td>
+                              <td className="right">Both cohorts well above 1×; pre-product token economics is normal</td>
+                            </tr>
+                            <tr>
+                              <td>Tx / day</td>
+                              <td className="right muted">awaiting Growthepie</td>
+                              <td className="right">{fmtN(C.NonAirdrop?.tx_per_day_med)}</td>
+                              <td className="right">{fmtN(C.Airdrop?.tx_per_day_med)}</td>
+                              <td className="right">{fmtN(C.NoToken?.tx_per_day_med)}</td>
+                              <td className="right muted">ADI Chain not yet on Growthepie</td>
+                            </tr>
+                            <tr>
+                              <td>Active wallets / day</td>
+                              <td className="right muted">awaiting Growthepie</td>
+                              <td className="right">{fmtN(C.NonAirdrop?.daa_med)}</td>
+                              <td className="right">{fmtN(C.Airdrop?.daa_med)}</td>
+                              <td className="right">{fmtN(C.NoToken?.daa_med)}</td>
+                              <td className="right muted">Submit ADI to Growthepie to populate</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </TuiPanel>
+                    </div>
+
+                    <Divider label="What this lens reveals" />
+                    <div className="section">
+                      <TuiPanel title="Read" padLg>
+                        <ul className="reading-list">
+                          <li><span className="lead">1</span><span><b>Non-airdrop L2s have ~4× higher Mcap/TVL than airdrop L2s.</b> Tight float pushes the ratio up across the cohort. Non-airdrop median is <b>{fmt(C.NonAirdrop?.mcap_tvl_med)}</b> vs airdrop median <b>{fmt(C.Airdrop?.mcap_tvl_med)}</b>. ADI's <b>{fmtX(adi.mcaptvl_with_ddsc, 2)}</b> is ~{(adi.mcaptvl_with_ddsc / (C.NonAirdrop?.mcap_tvl_med || 1)).toFixed(1)}× the non-airdrop median, not the 137× the all-cohort framing implies.</span></li>
+                          <li><span className="lead">2</span><span><b>The right peer set for ADI is non-airdrop L2s with restricted distribution.</b> World Chain ({fmtX(24.39)}), Mantle ({fmtX(5.83)}), Sophon ({fmtX(3.46)}) and ADI ({fmtX(adi.mcaptvl_with_ddsc, 2)}) are the apples-to-apples comparison. Comparing ADI to Arbitrum (0.30×) or Optimism (0.42×) is comparing pre-distribution to post-distribution chains, not pre-launch to post-launch.</span></li>
+                          <li><span className="lead">3</span><span><b>FDV gap is real and structural.</b> ADI's FDV is <b>{fmtUSD(adi.fdv_usd)}</b> against a non-airdrop median of <b>{fmtUSD(C.NonAirdrop?.fdv_med)}</b>. With ~10% circulating, the unlock overhang is the audit's enduring concern, independent of TVL growth.</span></li>
+                          <li><span className="lead">4</span><span><b>Activity data is blocked until ADI Chain is on Growthepie.</b> Their submission flow is open; one PR adds ADI to the chain list and unlocks tx/day + active-wallets benchmarking in this dashboard automatically.</span></li>
+                        </ul>
+                      </TuiPanel>
+                    </div>
+                  </>
+                );
+              })()}
 
               {active === 'scatter' && (
                 <>
