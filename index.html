@@ -1068,9 +1068,10 @@
     };
 
     /* ─── Benchmark table ───────────────────────────────── */
-    const BenchmarkTable = ({ rows, adi }) => {
+    const BenchmarkTable = ({ rows, adi, openDetail }) => {
       const grouped = { Large: [], Mid: [], Small: [], Micro: [] };
       rows.forEach(r => (grouped[r.tier] || grouped.Micro).push(r));
+      const handleClick = (r) => openDetail && openDetail(r);
 
       const distLabel = {
         airdrop:      'AIRDROP',
@@ -1104,7 +1105,10 @@
         const fdvtvl  = (fdv != null && tvl > 0) ? fdv/tvl : null;
         const voltvl = (dex != null && tvl > 0) ? (dex/tvl*100) : null;
         return (
-          <tr key={r.name + (isAdi ? '-adi' : '')} className={isAdi ? 'row-adi' : ''}>
+          <tr key={r.name + (isAdi ? '-adi' : '')}
+              className={isAdi ? 'row-adi' : ''}
+              onClick={() => handleClick(isAdi ? {...adi, name: 'ADI Chain', symbol: 'ADI'} : r)}
+              style={{ cursor: 'pointer' }}>
             <td>{r.name}</td>
             <td className="muted">{r.symbol || '-'}</td>
             <td><DistChip kind={r.distribution_model} /></td>
@@ -1594,26 +1598,28 @@
 
     /* ─── App shell ─────────────────────────────────────── */
     const NAV = [
-      { id: 'overview',     label: 'Terminal',     hotkey: '1' },
-      { id: 'distribution', label: 'Distribution', hotkey: '2' },
-      { id: 'scatter',      label: 'Charts',       hotkey: '3' },
-      { id: 'table',        label: 'L2 Universe',  hotkey: '4' },
-      { id: 'report',       label: 'Report',       hotkey: '5' },
+      { id: 'overview', label: 'Terminal',    hotkey: '1' },
+      { id: 'scatter',  label: 'Charts',      hotkey: '2' },
+      { id: 'table',    label: 'L2 Universe', hotkey: '3' },
+      { id: 'report',   label: 'Report',      hotkey: '4' },
     ];
 
     /* ─── Command palette ────────────────────────────────── */
     const COMMANDS = [
-      { id: 'go-overview',     label: 'Go: Terminal',          shortcut: '1', action: (set) => set('overview') },
-      { id: 'go-distribution', label: 'Go: Distribution view', shortcut: '2', action: (set) => set('distribution') },
-      { id: 'go-scatter',      label: 'Go: Charts',            shortcut: '3', action: (set) => set('scatter') },
-      { id: 'go-table',        label: 'Go: L2 Universe table', shortcut: '4', action: (set) => set('table') },
-      { id: 'go-report',       label: 'Go: Report',            shortcut: '5', action: (set) => set('report') },
-      { id: 'refresh',         label: 'Refresh data',          shortcut: 'R', action: () => window.location.reload() },
-      { id: 'github',          label: 'Open GitHub repo',      shortcut: '↗', action: () => window.open('https://github.com/surgencelab/adil2benchmark','_blank') },
-      { id: 'rpc',             label: 'Open ADI RPC explorer', shortcut: '↗', action: () => window.open('https://explorer.adifoundation.ai','_blank') },
+      { id: 'go-overview', label: 'Go: Terminal',          shortcut: '1', action: (set) => set('overview') },
+      { id: 'go-scatter',  label: 'Go: Charts',            shortcut: '2', action: (set) => set('scatter') },
+      { id: 'go-table',    label: 'Go: L2 Universe table', shortcut: '3', action: (set) => set('table') },
+      { id: 'go-report',   label: 'Go: Report',            shortcut: '4', action: (set) => set('report') },
+      { id: 'filter-airdrop',     label: 'Filter: Airdrop L2s only',     shortcut: 'F1', action: (_set, ctx) => ctx?.setFilter?.('airdrop') },
+      { id: 'filter-non-airdrop', label: 'Filter: Non-airdrop L2s only', shortcut: 'F2', action: (_set, ctx) => ctx?.setFilter?.('non-airdrop') },
+      { id: 'filter-no-token',    label: 'Filter: No-token L2s only',    shortcut: 'F3', action: (_set, ctx) => ctx?.setFilter?.('no_token') },
+      { id: 'filter-all',         label: 'Filter: Show all L2s',         shortcut: 'F4', action: (_set, ctx) => ctx?.setFilter?.('all') },
+      { id: 'refresh',     label: 'Refresh data',          shortcut: 'R', action: () => window.location.reload() },
+      { id: 'github',      label: 'Open GitHub repo',      shortcut: '↗', action: () => window.open('https://github.com/surgencelab/adil2benchmark','_blank') },
+      { id: 'rpc',         label: 'Open ADI RPC explorer', shortcut: '↗', action: () => window.open('https://explorer.adifoundation.ai','_blank') },
     ];
 
-    function CommandPalette({ open, onClose, setActive }) {
+    function CommandPalette({ open, onClose, setActive, ctx }) {
       const [q, setQ] = useState('');
       const [idx, setIdx] = useState(0);
       const inputRef = React.useRef(null);
@@ -1627,7 +1633,7 @@
         if (e.key === 'Enter') {
           e.preventDefault();
           const cmd = filtered[idx];
-          if (cmd) { cmd.action(setActive); onClose(); }
+          if (cmd) { cmd.action(setActive, ctx); onClose(); }
         }
       };
       return (
@@ -1641,7 +1647,7 @@
               {filtered.map((c, i) => (
                 <div key={c.id} className={`cmd-item ${i === idx ? 'active' : ''}`}
                      onMouseEnter={() => setIdx(i)}
-                     onClick={() => { c.action(setActive); onClose(); }}>
+                     onClick={() => { c.action(setActive, ctx); onClose(); }}>
                   <span>{c.label}</span>
                   <span className="kbd">{c.shortcut}</span>
                 </div>
@@ -1726,6 +1732,116 @@
       return <span className={`delta ${cls}`}>{sign}{pct.toFixed(1)}{suffix}</span>;
     };
 
+    /* ─── ChainChart: interactive multi-metric chart for detail pane ─ */
+    function ChainChart({ chain }) {
+      const r = chain;
+      // Build available metrics
+      const metrics = [
+        { id: 'price',   label: 'Price',   data: r.sparkline_30d,    fmt: v => `$${v < 1 ? v.toFixed(4) : v.toFixed(2)}` },
+        { id: 'tx',      label: 'Tx / day',data: r.tx_history,       fmt: v => Math.round(v).toLocaleString() },
+        { id: 'daa',     label: 'Active wallets', data: r.daa_history, fmt: v => Math.round(v).toLocaleString() },
+        { id: 'stables', label: 'Stables on chain', data: r.stables_history, fmt: v => fmtUSD(v) },
+        { id: 'fees',    label: 'Fees paid (USD)', data: r.fees_history, fmt: v => fmtUSD(v, 2) },
+      ];
+      const available = metrics.filter(m => Array.isArray(m.data) && m.data.length > 1);
+      const [activeId, setActiveId] = useState(available[0]?.id);
+      const [hover, setHover] = useState(null);
+      if (available.length === 0) {
+        return <div style={{ padding: 12, fontSize: 11.5, color: 'var(--text-muted)' }}>
+          No time-series available for this chain.
+          {r.name === 'ADI Chain' && <div style={{ marginTop: 4 }}>ADI Chain not yet on Growthepie · submit at growthepie.xyz</div>}
+        </div>;
+      }
+      const m = available.find(x => x.id === activeId) || available[0];
+      const data = m.data;
+      const W = 420, H = 140, P = { l: 50, r: 8, t: 10, b: 22 };
+      const inner = { w: W - P.l - P.r, h: H - P.t - P.b };
+      const min = Math.min(...data), max = Math.max(...data);
+      const range = max - min || 1;
+      const sx = i => P.l + (i / (data.length - 1)) * inner.w;
+      const sy = v => P.t + inner.h - ((v - min) / range) * (inner.h - 2) - 1;
+      const trend = data[data.length-1] - data[0];
+      const trendPct = data[0] ? (trend / data[0]) * 100 : 0;
+      const stroke = trend >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+      const fill   = trend >= 0 ? 'rgba(46,204,113,0.14)' : 'rgba(255,90,95,0.14)';
+      const pts = data.map((v, i) => `${sx(i).toFixed(1)},${sy(v).toFixed(1)}`).join(' ');
+      const areaPts = `${sx(0).toFixed(1)},${(P.t+inner.h).toFixed(1)} ${pts} ${sx(data.length-1).toFixed(1)},${(P.t+inner.h).toFixed(1)}`;
+      const ts = r.history_timestamps;
+      const tsAt = i => ts && ts[i] ? new Date(ts[i]*1000).toLocaleDateString(undefined,{month:'short', day:'numeric'}) : `d-${data.length-1-i}`;
+      const ticks = [0, Math.floor(data.length*0.5), data.length-1];
+
+      const onMove = (e) => {
+        const svg = e.currentTarget;
+        const rect = svg.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * W;
+        if (x < P.l || x > P.l + inner.w) return setHover(null);
+        const i = Math.round(((x - P.l) / inner.w) * (data.length - 1));
+        setHover({ i, v: data[i] });
+      };
+
+      return (
+        <div>
+          {/* metric tabs */}
+          <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap' }}>
+            {available.map(opt => (
+              <button key={opt.id} onClick={() => setActiveId(opt.id)}
+                      className={`time-pill ${activeId === opt.id ? 'active' : ''}`}
+                      style={{ padding: '3px 8px', fontSize: 9.5 }}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
+               style={{ display: 'block', width: '100%', height: 'auto', cursor: 'crosshair' }}
+               onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+            <defs>
+              <linearGradient id={`g-${r.name}-${m.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stopColor={stroke} stopOpacity="0.30" />
+                <stop offset="100%" stopColor={stroke} stopOpacity="0.02" />
+              </linearGradient>
+            </defs>
+            {/* y gridlines */}
+            {[0, 0.5, 1].map(p => {
+              const y = P.t + p * inner.h;
+              return <line key={p} x1={P.l} y1={y} x2={P.l+inner.w} y2={y} stroke="rgba(255,255,255,0.04)" />;
+            })}
+            {/* y tick labels */}
+            <text x={P.l - 6} y={P.t + 4} textAnchor="end" fontSize="9" fill="var(--text-muted)" fontFamily="var(--font-mono)">{m.fmt(max)}</text>
+            <text x={P.l - 6} y={P.t + inner.h + 3} textAnchor="end" fontSize="9" fill="var(--text-muted)" fontFamily="var(--font-mono)">{m.fmt(min)}</text>
+            {/* x tick labels */}
+            {ticks.map(i => (
+              <text key={i} x={sx(i)} y={H - 8} textAnchor="middle" fontSize="9" fill="var(--text-muted)" fontFamily="var(--font-mono)">{tsAt(i)}</text>
+            ))}
+            {/* area */}
+            <polygon points={areaPts} fill={`url(#g-${r.name}-${m.id})`} stroke="none" />
+            {/* line */}
+            <polyline points={pts} fill="none" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            {/* hover crosshair */}
+            {hover && (
+              <g>
+                <line x1={sx(hover.i)} y1={P.t} x2={sx(hover.i)} y2={P.t+inner.h} stroke="var(--text-muted)" strokeDasharray="2 2" />
+                <circle cx={sx(hover.i)} cy={sy(hover.v)} r="3" fill={stroke} stroke="var(--card)" strokeWidth="1.5" />
+                <rect x={sx(hover.i) + 6} y={sy(hover.v) - 18} width="100" height="32" rx="2" fill="var(--card)" stroke="var(--border-bright)" />
+                <text x={sx(hover.i) + 12} y={sy(hover.v) - 5} fontSize="10" fill="var(--text-muted)" fontFamily="var(--font-mono)">{tsAt(hover.i)}</text>
+                <text x={sx(hover.i) + 12} y={sy(hover.v) + 8} fontSize="11" fill="var(--foreground)" fontFamily="var(--font-mono)" fontWeight="700">{m.fmt(hover.v)}</text>
+              </g>
+            )}
+          </svg>
+
+          {/* footer summary */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+            <span>{data.length}d window</span>
+            <span>
+              Current <span style={{ color: 'var(--foreground)', fontWeight: 600 }}>{m.fmt(data[data.length-1])}</span>
+              {' · '}
+              <span style={{ color: stroke, fontWeight: 600 }}>{trendPct >= 0 ? '+' : ''}{trendPct.toFixed(1)}%</span>
+            </span>
+          </div>
+        </div>
+      );
+    }
+
     /* ─── Detail pane (slides in from right) ───────────── */
     function DetailPane({ chain, onClose }) {
       if (!chain) return null;
@@ -1769,9 +1885,10 @@
               <div className="detail-row"><span className="k">TVL 30d</span><span className={`v ${r.tvl_chg_30d > 0 ? 'up' : r.tvl_chg_30d < 0 ? 'down' : ''}`}>{r.tvl_chg_30d != null ? `${r.tvl_chg_30d > 0 ? '+':''}${r.tvl_chg_30d.toFixed(2)}%` : '-'}</span></div>
               <div className="detail-row"><span className="k">Price 7d</span><span className={`v ${r.price_chg_7d > 0 ? 'up' : r.price_chg_7d < 0 ? 'down' : ''}`}>{r.price_chg_7d != null ? `${r.price_chg_7d > 0 ? '+':''}${r.price_chg_7d.toFixed(2)}%` : '-'}</span></div>
               <div className="detail-row"><span className="k">Price 30d</span><span className={`v ${r.price_chg_30d > 0 ? 'up' : r.price_chg_30d < 0 ? 'down' : ''}`}>{r.price_chg_30d != null ? `${r.price_chg_30d > 0 ? '+':''}${r.price_chg_30d.toFixed(2)}%` : '-'}</span></div>
-              {sparks && (
-                <div className="detail-row"><span className="k">30d sparkline</span><span className="v"><Spark data={sparks} width={150} height={28} /></span></div>
-              )}
+
+              <div className="detail-section-label">30d chart</div>
+              <ChainChart chain={r} />
+
 
               <div className="detail-section-label">Distribution</div>
               <div className="detail-row"><span className="k">Model</span><span className="v">{r.distribution_model || '-'}</span></div>
@@ -1800,11 +1917,14 @@
       const [exporting, setExporting] = useState(false);
       const [cmdOpen, setCmdOpen] = useState(false);
       const [detail, setDetail] = useState(null);
+      const [tableFilter, setTableFilter] = useState('all');
       const adi = D.adi;
       const sum = D.tierSummary;
       const C = D.cohorts || {};
       // Click-to-detail helper passed into widgets
       const openDetail = (r) => setDetail(r);
+      // Command-palette context for filter shortcuts
+      const cmdCtx = { setFilter: (id) => { setTableFilter(id); setActive('table'); } };
 
       // Global keyboard shortcuts
       React.useEffect(() => {
@@ -1898,7 +2018,7 @@
           </nav>
 
           {/* Command palette + detail pane */}
-          <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} setActive={setActive} />
+          <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} setActive={setActive} ctx={cmdCtx} />
           {detail && <DetailPane chain={detail} onClose={() => setDetail(null)} />}
 
           {/* Main */}
@@ -2193,135 +2313,6 @@
               })()}
 
 
-              {active === 'distribution' && (() => {
-                const C = D.cohorts || {};
-                const fmt = v => v == null ? '-' : fmtX(v, 2);
-                const fmtN = v => v == null ? '-' : Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
-                const airdropRows    = D.rows.filter(r => r.airdrop_distributed);
-                const nonAirdropRows = D.rows.filter(r => r.has_token && !r.airdrop_distributed);
-                const noTokenRows    = D.rows.filter(r => !r.has_token);
-                // sort each by mcap (or tvl if no mcap)
-                const sortBy = (rows, key) => [...rows].sort((a,b) => (b[key]||0) - (a[key]||0));
-
-                const ProtoRow = ({ r, highlight=false }) => {
-                  const mcap = r.chain_mcap;
-                  const fdv = r.fdv_usd;
-                  const mt = (mcap && r.tvl) ? mcap/r.tvl : null;
-                  const tip = [
-                    r.distribution_model && `dist: ${r.distribution_model}`,
-                    r.airdrop_pct_of_supply ? `airdrop: ${r.airdrop_pct_of_supply}% of supply` : null,
-                    r.max_supply ? `max supply: ${(r.max_supply/1e6).toFixed(0)}M` : null,
-                    r.tx_per_day ? `tx/day: ${Math.round(r.tx_per_day).toLocaleString()}` : null,
-                    r.active_wallets_per_day ? `daa: ${Math.round(r.active_wallets_per_day).toLocaleString()}` : null,
-                    r.protocols ? `protocols: ${r.protocols}` : null,
-                  ].filter(Boolean).join(' · ');
-                  return (
-                    <tr title={tip} className={highlight ? 'row-adi' : ''}>
-                      <td>{r.name}</td>
-                      <td className="muted">{r.symbol || '-'}</td>
-                      <td className="right">{fmtUSD(r.tvl)}</td>
-                      <td className="right">{fmtUSD(mcap)}</td>
-                      <td className="right">{fmtUSD(fdv)}</td>
-                      <td className="right">{mt == null ? '-' : <span className={mt > 50 ? 'danger' : ''}>{fmtX(mt)}</span>}</td>
-                    </tr>
-                  );
-                };
-
-                const AdiProtoRow = () => {
-                  const tip = `dist: private_only · IHC + FAB + Sirius founding partners · DDSC peg: 1 AED, FAB-custodied · max supply: 1000M · ~10% circulating`;
-                  return (
-                    <tr title={tip} className="row-adi">
-                      <td>ADI Chain</td>
-                      <td className="muted">ADI</td>
-                      <td className="right">{fmtUSD(adi.tvl_with_ddsc)}</td>
-                      <td className="right">{fmtUSD(adi.token_mcap)}</td>
-                      <td className="right">{fmtUSD(adi.fdv_usd)}</td>
-                      <td className="right">{fmtX(adi.mcaptvl_with_ddsc, 2)}</td>
-                    </tr>
-                  );
-                };
-
-                return (
-                  <>
-                    <div className="page-header" style={{ marginBottom: 12 }}>
-                      <div className="page-eyebrow">Distribution Model</div>
-                      <h1 className="page-title" style={{ fontSize: 22 }}>Airdrop vs non-airdrop L2s</h1>
-                    </div>
-
-                    <div className="section" style={{ marginBottom: 14 }}>
-                      <div className="meta-strip">
-                        <span className="kv"><span className="k">Airdrop L2s</span><span className="v">{airdropRows.length} chains · Mcap/TVL med {fmt(C.Airdrop?.mcap_tvl_med)} · FDV med {fmtUSD(C.Airdrop?.fdv_med)}</span></span>
-                        <span className="kv" style={{ borderColor: 'var(--accent-red)' }}><span className="k">Non-airdrop</span><span className="v" style={{ color: 'var(--accent-red)' }}>{nonAirdropRows.length} chains · Mcap/TVL med {fmt(C.NonAirdrop?.mcap_tvl_med)} · FDV med {fmtUSD(C.NonAirdrop?.fdv_med)}</span></span>
-                        <span className="kv"><span className="k">No-token</span><span className="v">{noTokenRows.length} chains · TVL med {fmtUSD(C.NoToken?.tvl_med)}</span></span>
-                      </div>
-                    </div>
-
-                    <div className="section grid-3" style={{ alignItems: 'start' }}>
-                      <TuiPanel title="Airdrop L2s" badge={`${airdropRows.length} chains · hover for detail`} flush>
-                        <div style={{ maxHeight: 540, overflow: 'auto' }}>
-                          <table className="data-table">
-                            <thead>
-                              <tr>
-                                <th>Chain</th>
-                                <th>Token</th>
-                                <th className="right">TVL</th>
-                                <th className="right">Mcap</th>
-                                <th className="right">FDV</th>
-                                <th className="right">M/T</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {sortBy(airdropRows, 'chain_mcap').map(r => <ProtoRow key={r.name} r={r} />)}
-                            </tbody>
-                          </table>
-                        </div>
-                      </TuiPanel>
-
-                      <TuiPanel title="Non-airdrop (have token)" badge={`${nonAirdropRows.length + 1} chains · ADI peer set`} flush>
-                        <div style={{ maxHeight: 540, overflow: 'auto' }}>
-                          <table className="data-table">
-                            <thead>
-                              <tr>
-                                <th>Chain</th>
-                                <th>Token</th>
-                                <th className="right">TVL</th>
-                                <th className="right">Mcap</th>
-                                <th className="right">FDV</th>
-                                <th className="right">M/T</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <AdiProtoRow />
-                              {sortBy(nonAirdropRows, 'chain_mcap').map(r => <ProtoRow key={r.name} r={r} />)}
-                            </tbody>
-                          </table>
-                        </div>
-                      </TuiPanel>
-
-                      <TuiPanel title="No-token L2s" badge={`${noTokenRows.length} chains`} flush>
-                        <div style={{ maxHeight: 540, overflow: 'auto' }}>
-                          <table className="data-table">
-                            <thead>
-                              <tr>
-                                <th>Chain</th>
-                                <th>Token</th>
-                                <th className="right">TVL</th>
-                                <th className="right">Mcap</th>
-                                <th className="right">FDV</th>
-                                <th className="right">M/T</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {sortBy(noTokenRows, 'tvl').map(r => <ProtoRow key={r.name} r={r} />)}
-                            </tbody>
-                          </table>
-                        </div>
-                      </TuiPanel>
-                    </div>
-                  </>
-                );
-              })()}
-
               {active === 'scatter' && (
                 <>
                   <div className="page-header" style={{ marginBottom: 12 }}>
@@ -2343,19 +2334,71 @@
                 </>
               )}
 
-              {active === 'table' && (
-                <>
-                  <div className="page-header" style={{ marginBottom: 12 }}>
-                    <div className="page-eyebrow">Full L2 Table</div>
-                    <h1 className="page-title" style={{ fontSize: 22 }}>{D.rows.length} chains · DefiLlama + Growthepie + CoinGecko</h1>
-                  </div>
-                  <div className="section">
-                    <TuiPanel title="L2 universe" badge={`${D.rows.length + 1} rows · sorted by tier · medians via DefiLlama`} flush>
-                      <BenchmarkTable rows={D.rows} adi={adi} />
-                    </TuiPanel>
-                  </div>
-                </>
-              )}
+              {active === 'table' && (() => {
+                const FILTERS = [
+                  { id: 'all',         label: 'All L2s',        match: r => true },
+                  { id: 'airdrop',     label: 'Airdrop',        match: r => r.airdrop_distributed },
+                  { id: 'non-airdrop', label: 'Non-airdrop (have token)', match: r => r.has_token && !r.airdrop_distributed },
+                  { id: 'no_token',    label: 'No token',       match: r => !r.has_token },
+                  { id: 'fair_launch', label: 'Fair launch',    match: r => r.distribution_model === 'fair_launch' },
+                  { id: 'token_swap',  label: 'Token swap',     match: r => r.distribution_model === 'token_swap' },
+                  { id: 'large',       label: 'Large tier (top 5)',   match: r => r.tier === 'Large' },
+                  { id: 'mid',         label: 'Mid tier (6-15)',      match: r => r.tier === 'Mid' },
+                  { id: 'small',       label: 'Small tier (16-30)',   match: r => r.tier === 'Small' },
+                  { id: 'has_fdv',     label: 'With FDV data',  match: r => !!r.fdv_usd },
+                  { id: 'on_growthepie', label: 'On Growthepie', match: r => !!r.tx_per_day },
+                ];
+                const filterId = tableFilter;
+                const filt = FILTERS.find(f => f.id === filterId) || FILTERS[0];
+                const filteredRows = D.rows.filter(filt.match);
+
+                // Cohort medians for the chips strip
+                const C = D.cohorts || {};
+                return (
+                  <>
+                    <div className="page-header" style={{ marginBottom: 10 }}>
+                      <div className="page-eyebrow">L2 Universe</div>
+                      <h1 className="page-title" style={{ fontSize: 22 }}>
+                        {filteredRows.length} chains
+                        <span style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 10, fontWeight: 400 }}>
+                          ({filt.label})
+                        </span>
+                      </h1>
+                    </div>
+
+                    {/* Cohort summary strip */}
+                    <div className="section" style={{ marginBottom: 10 }}>
+                      <div className="meta-strip">
+                        <span className="kv"><span className="k">Airdrop ({C.Airdrop?.n})</span><span className="v">M/T med {fmtX(C.Airdrop?.mcap_tvl_med,2)} · FDV med {fmtUSD(C.Airdrop?.fdv_med)}</span></span>
+                        <span className="kv" style={{ borderColor: 'var(--accent-red)' }}><span className="k">Non-airdrop ({C.NonAirdrop?.n})</span><span className="v" style={{ color: 'var(--accent-red)' }}>M/T med {fmtX(C.NonAirdrop?.mcap_tvl_med,2)} · FDV med {fmtUSD(C.NonAirdrop?.fdv_med)}</span></span>
+                        <span className="kv"><span className="k">No-token ({C.NoToken?.n})</span><span className="v">TVL med {fmtUSD(C.NoToken?.tvl_med)}</span></span>
+                        <span className="kv"><span className="k">ADI</span><span className="v" style={{ color: 'var(--accent-red)' }}>M/T {fmtX(adi.mcaptvl_with_ddsc,2)} · {(adi.mcaptvl_with_ddsc/(C.NonAirdrop?.mcap_tvl_med||1)).toFixed(1)}× non-airdrop median</span></span>
+                      </div>
+                    </div>
+
+                    {/* Filter chips */}
+                    <div className="section" style={{ marginBottom: 10, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                      {FILTERS.map(f => {
+                        const count = D.rows.filter(f.match).length;
+                        return (
+                          <button key={f.id}
+                                  onClick={() => setTableFilter(f.id)}
+                                  className={`time-pill ${filterId === f.id ? 'active' : ''}`}
+                                  style={{ cursor: 'pointer' }}>
+                            {f.label} <span style={{ opacity: 0.6, marginLeft: 4 }}>{count}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="section">
+                      <TuiPanel title="L2 universe" badge={`${filteredRows.length} chains · click any row for full detail`} flush>
+                        <BenchmarkTable rows={filteredRows} adi={adi} openDetail={openDetail} />
+                      </TuiPanel>
+                    </div>
+                  </>
+                );
+              })()}
 
               {active === 'report' && (
                 <>
