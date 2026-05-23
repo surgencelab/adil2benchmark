@@ -3,7 +3,6 @@
  * New: 'Missing CoinGecko data' filter + explainer.
  */
 import type { Dataset, L2Row } from '../data/types';
-import { fmtUSD, fmtX } from '../lib/format';
 import { L2Table } from '../components/L2Table';
 
 interface Filter {
@@ -33,9 +32,7 @@ interface Props {
 export function L2UniversePage({ data, filterId, setFilterId, openDetail }: Props) {
   const filt = FILTERS.find((f) => f.id === filterId) ?? FILTERS[0];
   const filteredRows = data.rows.filter(filt.match);
-  const C = data.cohorts;
   const adi = data.adi;
-  const adiMT = adi.mcaptvl_with_ddsc;
 
   return (
     <>
@@ -47,18 +44,6 @@ export function L2UniversePage({ data, filterId, setFilterId, openDetail }: Prop
             ({filt.label})
           </span>
         </h1>
-      </div>
-
-      <div className="section" style={{ marginBottom: 10 }}>
-        <div className="meta-strip">
-          <span className="kv"><span className="k">Airdrop ({C.Airdrop?.n})</span><span className="v">M/T med {fmtX(C.Airdrop?.mcap_tvl_med, 2)} · FDV med {fmtUSD(C.Airdrop?.fdv_med)}</span></span>
-          <span className="kv" style={{ borderColor: 'var(--accent-red)' }}>
-            <span className="k">Non-airdrop ({C.NonAirdrop?.n})</span>
-            <span className="v" style={{ color: 'var(--accent-red)' }}>M/T med {fmtX(C.NonAirdrop?.mcap_tvl_med, 2)} · FDV med {fmtUSD(C.NonAirdrop?.fdv_med)}</span>
-          </span>
-          <span className="kv"><span className="k">No-token ({C.NoToken?.n})</span><span className="v">TVL med {fmtUSD(C.NoToken?.tvl_med)}</span></span>
-          <span className="kv"><span className="k">ADI</span><span className="v" style={{ color: 'var(--accent-red)' }}>M/T {fmtX(adiMT, 2)} · {(adiMT / (C.NonAirdrop?.mcap_tvl_med || 1)).toFixed(1)}× non-airdrop median</span></span>
-        </div>
       </div>
 
       <div className="section" style={{ marginBottom: 10, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
