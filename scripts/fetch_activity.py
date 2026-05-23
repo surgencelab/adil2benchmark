@@ -55,7 +55,7 @@ COINGECKO_ID = {
     "LightLink":    "lightlink",
     "Superseed":    "superseed",
     "Pepu":         "pepe-unchained",
-    "Moonchain":    "moonchain-2",
+    "Moonchain":    "moonchain",
     "Mind Network": "mind-network",
 }
 
