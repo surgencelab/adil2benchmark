@@ -1299,8 +1299,11 @@
     );
 
     /* ─── Mcap vs TVL scatter, wrapped in ChartWrapper ───── */
-    const ScatterMcapVsTvl = ({ rows, adi, openDetail }) => {
+    const ScatterMcapVsTvl = ({ rows, adi, openDetail, metric='mcap' }) => {
       const [hover, setHover] = React.useState(null);
+      const yKey = metric === 'fdv' ? 'fdv_usd' : 'chain_mcap';
+      const yLabel = metric === 'fdv' ? 'FDV (LOG SCALE)' : 'MCAP (LOG SCALE)';
+      const refLabel = metric === 'fdv' ? 'FDV = TVL' : 'Mcap = TVL';
       const W = 960, H = 440, P = { l: 60, r: 28, t: 22, b: 40 };
       const inner = { w: W - P.l - P.r, h: H - P.t - P.b };
 
@@ -1316,22 +1319,24 @@
         private_only: 'var(--accent-orange)',
       };
 
-      const pts = rows.filter(r => r.tvl > 0 && (r.chain_mcap||0) > 0).map(r => ({
+      const pts = rows.filter(r => r.tvl > 0 && (r[yKey]||0) > 0).map(r => ({
         row: r,
         name: r.name,
         sym: r.symbol,
         x: r.tvl,
-        y: r.chain_mcap,
-        mt: r.chain_mcap / r.tvl,
+        y: r[yKey],
+        mt: r[yKey] / r.tvl,
         dist: r.distribution_model,
         color: distColor[r.distribution_model] || 'var(--text-muted)',
       }));
       // ADI: on-chain truth point
+      const adiY = metric === 'fdv' ? adi.fdv_usd : adi.token_mcap;
+      const adiYGhost = metric === 'fdv' ? adi.fdv_usd : adi.token_mcap;
       pts.push({
         row: { ...adi, name: 'ADI Chain', symbol: 'ADI' },
         name: 'ADI Chain', sym: 'ADI',
-        x: adi.tvl_with_ddsc, y: adi.token_mcap,
-        mt: adi.mcaptvl_with_ddsc,
+        x: adi.tvl_with_ddsc, y: adiY,
+        mt: adiY / adi.tvl_with_ddsc,
         dist: 'private_only',
         color: 'var(--accent-red)',
         adi: true,
@@ -1340,8 +1345,8 @@
       const adiGhost = {
         row: { ...adi, name: 'ADI Chain (DefiLlama view)', symbol: 'ADI' },
         name: 'ADI (DefiLlama view)', sym: '',
-        x: adi.tvl_defillama_visible, y: adi.token_mcap,
-        mt: adi.mcaptvl,
+        x: adi.tvl_defillama_visible, y: adiYGhost,
+        mt: adiYGhost / adi.tvl_defillama_visible,
         dist: 'private_only',
         color: 'var(--accent-red)',
         ghost: true,
@@ -1420,14 +1425,14 @@
                 fill="var(--text-muted)" fontFamily="var(--font-mono)" letterSpacing="0.1em">TVL (LOG SCALE)</text>
           <text x={14} y={P.t + inner.h/2} fontSize="10" textAnchor="middle"
                 fill="var(--text-muted)" fontFamily="var(--font-mono)" letterSpacing="0.1em"
-                transform={`rotate(-90 14 ${P.t + inner.h/2})`}>MCAP (LOG SCALE)</text>
+                transform={`rotate(-90 14 ${P.t + inner.h/2})`}>{yLabel}</text>
 
-          {/* Mcap = TVL reference */}
+          {/* Reference line: y = x */}
           <line x1={sx(10**xMin)} y1={sy(10**xMin)} x2={sx(10**xMax)} y2={sy(10**xMax)}
                 stroke="var(--tint-strong)" strokeDasharray="4 4" />
           <text x={sx(10**(xMin + (xMax-xMin)*0.88))} y={sy(10**(xMin + (xMax-xMin)*0.88)) - 6}
                 fontSize="10" fill="var(--text-muted)" textAnchor="middle" fontStyle="italic"
-                fontFamily="var(--font-mono)">Mcap = TVL</text>
+                fontFamily="var(--font-mono)">{refLabel}</text>
 
           {/* ADI ghost point (DefiLlama view), drawn first so on-chain sits on top */}
           {(() => {
@@ -1903,17 +1908,18 @@
     /* ─── Ticker bar ─────────────────────────────────────── */
     function TickerBar({ adi, sum }) {
       const items = [
+        { l: 'ADI FDV',     v: fmtUSD(adi.fdv_usd),          cls: '' },
+        { l: 'FDV/TVL',     v: adi.fdv_usd ? fmtX(adi.fdv_usd / adi.tvl_with_ddsc, 1) : '-', cls: 'down' },
         { l: 'ADI MC',      v: fmtUSD(adi.token_mcap),       cls: '' },
-        { l: 'ADI TVL',     v: fmtUSD(adi.tvl_with_ddsc),    cls: '' },
         { l: 'MC/TVL',      v: fmtX(adi.mcaptvl_with_ddsc,2),cls: 'warn' },
-        { l: 'FDV',         v: fmtUSD(adi.fdv_usd),          cls: '' },
-        { l: 'FDV/TVL',     v: adi.fdv_usd ? fmtX(adi.fdv_usd / adi.tvl_with_ddsc, 1) : '-', cls: 'warn' },
+        { l: 'ADI TVL',     v: fmtUSD(adi.tvl_with_ddsc),    cls: '' },
         { l: 'DDSC',        v: fmtUSD(adi.ddsc_tvl_usd),     cls: 'up' },
         { l: 'DEFILLAMA VIEW', v: fmtX(adi.mcaptvl,0),       cls: 'down' },
         { l: '24H TURNOVER',v: fmtPct(adi.turnover_vol_mc_pct,2), cls: 'down' },
         { l: 'L2s TRACKED', v: D.rows.length,                 cls: '' },
-        { l: 'MID-L2 MED',  v: fmtX(sum.Mid.mcap_tvl_med,2),  cls: '' },
-        { l: 'LARGE-L2 MED',v: fmtX(sum.Large.mcap_tvl_med,2),cls: '' },
+        { l: 'MID FDV/TVL', v: '6.7×',                        cls: '' },
+        { l: 'NON-AIRDROP FDV/TVL', v: '6.7×',               cls: '' },
+        { l: 'CIRCULATING', v: '~10%',                        cls: 'warn' },
       ];
       // Duplicate for seamless infinite scroll
       const display = [...items, ...items];
@@ -2157,6 +2163,13 @@
       const [cmdOpen, setCmdOpen] = useState(false);
       const [detail, setDetail] = useState(null);
       const [tableFilter, setTableFilter] = useState('all');
+      const [metric, setMetric] = useState(() => {
+        try { return localStorage.getItem('adi-l2-metric') || 'fdv'; } catch (e) { return 'fdv'; }
+      });
+      const setMetricPersist = (m) => {
+        setMetric(m);
+        try { localStorage.setItem('adi-l2-metric', m); } catch (e) {}
+      };
       const [theme, setTheme] = useState(() => {
         try { return document.body.getAttribute('data-theme') || 'dark'; } catch (e) { return 'dark'; }
       });
@@ -2277,6 +2290,18 @@
                 <span className="brand-title">{NAV.find(n => n.id === active)?.label || 'Overview'} · ADI L2 Benchmark</span>
               </div>
               <div className="nav-cluster">
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 0, marginRight: 8, border: '1px solid var(--border-bright)', borderRadius: 3, overflow: 'hidden' }} title="Switch the valuation lens used in scatter, heatmap, and 'Where ADI sits'. Mcap (price × circulating) is the standard CG / CMC number. FDV (price × max supply) is the apples-to-apples lens preferred by analysts when distribution differs across projects.">
+                  <button onClick={() => setMetricPersist('mcap')}
+                          style={{ padding: '4px 10px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                   background: metric === 'mcap' ? 'rgba(255,139,77,0.10)' : 'transparent',
+                                   color: metric === 'mcap' ? 'var(--accent-orange)' : 'var(--text-muted)',
+                                   border: 'none', cursor: 'pointer' }}>Mcap</button>
+                  <button onClick={() => setMetricPersist('fdv')}
+                          style={{ padding: '4px 10px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                   background: metric === 'fdv' ? 'rgba(255,139,77,0.10)' : 'transparent',
+                                   color: metric === 'fdv' ? 'var(--accent-orange)' : 'var(--text-muted)',
+                                   border: 'none', cursor: 'pointer', borderLeft: '1px solid var(--border-bright)' }}>FDV</button>
+                </div>
                 <span className="cmd-hint" onClick={() => setCmdOpen(true)} title="Open command palette (⌘K or /)">
                   ⌘K<span className="kbd">/</span>
                 </span>
@@ -2349,30 +2374,48 @@
                         <span className="widget-meta">peer + tier + audit lens</span>
                       </div>
                       <div className="widget-body">
-                        <div className="position-read">
+                        <div className="position-read" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
                           <div className="pr-cell">
-                            <div className="pr-label">Peer cohort</div>
+                            <div className="pr-label">Mcap lens (price × circulating)</div>
                             <div className="pr-value">
-                              <b>Non-airdrop L2s</b> (private distribution).
-                              Median M/T <b>{fmtX(C.NonAirdrop?.mcap_tvl_med,2)}</b>.
-                              ADI's {fmtX(adiMT,2)} is <span className="warn">{(adiMT/(C.NonAirdrop?.mcap_tvl_med||1)).toFixed(1)}× the cohort median</span>.
+                              ADI's <b>M/T {fmtX(adiMT,2)}</b> vs non-airdrop cohort median <b>{fmtX(C.NonAirdrop?.mcap_tvl_med,2)}</b>.
+                              That's <span className="warn">{(adiMT/(C.NonAirdrop?.mcap_tvl_med||1)).toFixed(1)}× the cohort median</span>.
+                              Tight float (~10% circulating) flatters the number.
+                            </div>
+                          </div>
+                          <div className="pr-cell" style={{ background: 'rgba(255,139,77,0.04)', borderRadius: 3 }}>
+                            <div className="pr-label" style={{ color: 'var(--accent-orange)' }}>FDV lens · client preferred</div>
+                            <div className="pr-value">
+                              ADI's <b>FDV/TVL {fmtX(adi.fdv_usd/adi.tvl_with_ddsc,1)}</b> vs non-airdrop cohort median <b>{fmtX(C.NonAirdrop?.fdv_tvl_med,2)}</b>.
+                              That's <span className="danger">{(adi.fdv_usd/adi.tvl_with_ddsc/(C.NonAirdrop?.fdv_tvl_med||1)).toFixed(1)}× the cohort median</span>.
+                              FDV doesn't depend on distribution; it's the apples-to-apples lens.
+                            </div>
+                          </div>
+                        </div>
+                        <div className="position-read" style={{ marginTop: 10 }}>
+                          <div className="pr-cell">
+                            <div className="pr-label">Nearest peers (by Mcap/TVL)</div>
+                            <div className="pr-value">
+                              {peers.map((p) => (
+                                <div key={p.name}>
+                                  <b>{p.name}</b> M/T {fmtX(p._mt,2)} · FDV/TVL {p.fdv_usd ? fmtX(p.fdv_usd/p.tvl,2) : '-'}
+                                </div>
+                              ))}
                             </div>
                           </div>
                           <div className="pr-cell">
-                            <div className="pr-label">Nearest peers (by M/T)</div>
+                            <div className="pr-label">Cohort medians (n)</div>
                             <div className="pr-value">
-                              {peers.map((p, i) => (
-                                <div key={p.name}>
-                                  <b>{p.name}</b> {fmtX(p._mt,2)}
-                                </div>
-                              ))}
+                              Airdrop ({C.Airdrop?.n}) · M/T <b>{fmtX(C.Airdrop?.mcap_tvl_med,2)}</b> · FDV/TVL <b>{fmtX(C.Airdrop?.fdv_tvl_med,2)}</b><br/>
+                              Non-airdrop ({C.NonAirdrop?.n}) · M/T <b>{fmtX(C.NonAirdrop?.mcap_tvl_med,2)}</b> · FDV/TVL <b>{fmtX(C.NonAirdrop?.fdv_tvl_med,2)}</b><br/>
+                              No-token ({C.NoToken?.n}) · TVL med <b>{fmtUSD(C.NoToken?.tvl_med)}</b>
                             </div>
                           </div>
                           <div className="pr-cell">
                             <div className="pr-label">Audit-view gap</div>
                             <div className="pr-value">
                               DefiLlama M/T <span className="danger">{fmtX(adi.mcaptvl,0)}</span> (no DDSC indexed).
-                              On-chain truth is <b>{fmtX(adiMT,2)}</b>. The gap is a data-layer problem, not fundamentals.
+                              On-chain M/T is <b>{fmtX(adiMT,2)}</b>. The gap is a data-layer problem.
                             </div>
                           </div>
                         </div>
@@ -2409,14 +2452,17 @@
 
 
               {active === 'scatter' && (() => {
-                const adiMT = adi.mcaptvl_with_ddsc;
+                const yKey = metric === 'fdv' ? 'fdv_usd' : 'chain_mcap';
+                const adiYval = metric === 'fdv' ? adi.fdv_usd : adi.token_mcap;
+                const adiMT = adiYval / adi.tvl_with_ddsc;
+                const ratioLabel = metric === 'fdv' ? 'FDV/TVL' : 'Mcap/TVL';
                 const heatChains = [...D.rows]
-                  .filter(r => r.chain_mcap && r.tvl)
-                  .map(r => ({...r, _mt: r.chain_mcap/r.tvl}))
-                  .sort((a,b) => b.chain_mcap - a.chain_mcap)
+                  .filter(r => r[yKey] && r.tvl)
+                  .map(r => ({...r, _mt: r[yKey]/r.tvl}))
+                  .sort((a,b) => b[yKey] - a[yKey])
                   .slice(0, 18)
                   .concat([{ name: 'ADI Chain', symbol: 'ADI', _mt: adiMT, _adi: true,
-                             chain_mcap: adi.token_mcap, tvl: adi.tvl_with_ddsc, ...adi }]);
+                             chain_mcap: adi.token_mcap, fdv_usd: adi.fdv_usd, tvl: adi.tvl_with_ddsc, ...adi }]);
                 const tvlLeader = [...D.rows]
                   .filter(r => r.tvl > 0)
                   .sort((a,b) => b.tvl - a.tvl)
@@ -2428,11 +2474,11 @@
                     <div className="widget w-12"
                          title="Each dot is one L2. X = chain TVL (real capital deployed). Y = native token market cap. Both axes are log scale so chains 1000× apart in size fit on one chart. Dot size grows with Mcap. Dots near the dashed Mcap=TVL line are 'fairly priced' to usage; dots above are growth-priced; dots far above are outliers. The shaded green band is the healthy Mcap/TVL zone (0.3-5×). ADI is shown twice: solid dot = on-chain TVL incl. DDSC ($35M), open dashed dot = DefiLlama-only view ($2M). Hover a dot for chain detail; click to open the detail pane.">
                       <div className="widget-head">
-                        <span className="widget-title">MCAP vs TVL · log-log</span>
+                        <span className="widget-title">{metric === 'fdv' ? 'FDV' : 'MCAP'} vs TVL · log-log</span>
                         <span className="widget-meta">{D.rows.filter(r => r.tvl > 0 && (r.chain_mcap||0) > 0).length + 1} chains · click any dot · hover header to learn</span>
                       </div>
                       <div className="widget-body flush">
-                        <ScatterMcapVsTvl rows={D.rows} adi={adi} openDetail={openDetail} />
+                        <ScatterMcapVsTvl rows={D.rows} adi={adi} openDetail={openDetail} metric={metric} />
                       </div>
                     </div>
 
@@ -2490,10 +2536,10 @@
                     </div>
 
                     <div className="widget w-6"
-                         title="Each tile is one L2, sized roughly by market cap, colored by Mcap/TVL intensity. Green = healthy (under 2x), yellow = growth-priced (2-10x), amber = priced on expectation (10-50x), red = outlier (50x+). ADI outlined in orange. Click any tile to open the detail pane.">
+                         title={`Each tile is one L2, colored by ${ratioLabel} intensity. Green = healthy (under 2x), yellow = growth-priced (2-10x), amber = priced on expectation (10-50x), red = outlier (50x+). ADI outlined in orange. Click any tile to open the detail pane. Toggle Mcap/FDV at the top of the screen to swap the lens.`}>
                       <div className="widget-head">
-                        <span className="widget-title">Mcap/TVL heatmap</span>
-                        <span className="widget-meta">top 18 by Mcap · click for detail · hover header to learn</span>
+                        <span className="widget-title">{ratioLabel} heatmap</span>
+                        <span className="widget-meta">top 18 by {metric==='fdv'?'FDV':'Mcap'} · click for detail · hover header to learn</span>
                       </div>
                       <div className="widget-body">
                         <div className="heatmap">
