@@ -532,6 +532,56 @@
     .verdict b { color: var(--accent-red); }
     .verdict em { font-style: normal; color: var(--accent-orange); font-weight: 600; }
 
+    /* ─── Proof point callout ───────────────────────────────── */
+    .proof {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent-green);
+      border-radius: 4px;
+      padding: 18px 22px;
+      font-family: var(--font-sans);
+      font-size: 13.5px; line-height: 1.7;
+      color: var(--foreground);
+      position: relative;
+      overflow: hidden;
+    }
+    .proof::before {
+      content: "";
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-green), transparent);
+      opacity: 0.55;
+    }
+    .proof-label {
+      display: inline-block; font-family: var(--font-mono);
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--accent-green); font-weight: 700; margin-right: 8px;
+    }
+    .proof blockquote {
+      margin: 12px 0 6px 0; padding: 10px 14px;
+      border-left: 2px solid var(--accent-green);
+      font-style: italic; color: var(--foreground);
+      background: rgba(15,157,88,0.04);
+      font-size: 13px; line-height: 1.65;
+    }
+    .proof blockquote cite {
+      display: block; margin-top: 6px; font-style: normal;
+      font-family: var(--font-mono); font-size: 11px;
+      color: var(--text-muted); letter-spacing: 0.04em;
+    }
+    .proof b { color: var(--foreground); font-weight: 600; }
+    .proof .partners {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;
+    }
+    .proof .partner {
+      display: inline-flex; align-items: center;
+      padding: 2px 10px; font-size: 10px;
+      font-family: var(--font-mono); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      border: 1px solid var(--accent-green); border-radius: 3px;
+      color: var(--accent-green); background: rgba(15,157,88,0.06);
+    }
+
     /* ════════════════════════════════════════════════════════════════
        Meta strip (key-value pairs)
        ════════════════════════════════════════════════════════════════ */
@@ -1313,11 +1363,29 @@
                     </TuiPanel>
                   </div>
 
+                  <Divider label="Institutional proof point" />
+                  <div className="section">
+                    <div className="proof">
+                      <span className="proof-label">{`>`} VERIFIED IN-MARKET</span>
+                      <b>IHC executed a $30M (110M AED) DDSC transaction on ADI Chain</b>, in partnership with <b>First Abu Dhabi Bank</b> and <b>Sirius International Holding</b>. International Holding Company (Abu Dhabi-based, valued at $233B) is described in the announcement as a <em>founding participant in the DDSC ecosystem</em>. The transaction is reported as the first major corporate-scale transfer of a UAE Central Bank-regulated digital currency.
+                      <blockquote>
+                        "The 110 million AED ($30 million) DDSC transaction on ADI Chain marks the start of a new era; institutional digital assets are not just feasible, but now scalable and efficient at large volumes."
+                        <cite>Syed Basar Shueb, CEO, International Holding Company</cite>
+                      </blockquote>
+                      <div className="partners">
+                        <span className="partner">IHC · $233B</span>
+                        <span className="partner">FAB · UAE's largest bank</span>
+                        <span className="partner">Sirius Intl Holding</span>
+                        <span className="partner">CBUAE regulated</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <Divider label="Bottom line" />
                   <div className="section">
                     <div className="verdict">
                       <span className="verdict-label">{`>`} ANALYST READ</span>
-                      DDSC is pegged 1:1 to <b>AED</b> (not USD), reserves custodied by First Abu Dhabi Bank. At the fixed {adi.ddsc_aed_per_usd} AED/USD peg, the <b>{adi.ddsc_tvl_aed.toLocaleString()} AED</b> supply converts to <b>{fmtUSD(adi.ddsc_tvl_usd)}</b>. Counted alongside the {fmtUSD(adi.tvl_defillama_visible)} of Uniswap LP liquidity, ADI's total on-chain TVL is <b>{fmtUSD(adi.tvl_with_ddsc)}</b>, giving a Mcap/TVL ratio of <b>{fmtX(adi.mcaptvl_with_ddsc, 2)}</b>. That's growth-priced but no longer an outlier: above Mantle ({fmtX(5.83)}) and Manta ({fmtX(5.27)}), below World Chain ({fmtX(24.39)}). The audit's widely-cited <b>{fmtX(adi.mcaptvl, 0)}</b> headline is a measurement gap, DefiLlama doesn't yet index DDSC. The real concern shifts from "token economics vs usage" toward <em>data-layer integrity</em> (Concern #7) plus the still-real liquidity gap (0.15% daily turnover).
+                      DDSC is pegged 1:1 to <b>AED</b> (not USD), reserves custodied by First Abu Dhabi Bank. At the fixed {adi.ddsc_aed_per_usd} AED/USD peg, the <b>{adi.ddsc_tvl_aed.toLocaleString()} AED</b> supply converts to <b>{fmtUSD(adi.ddsc_tvl_usd)}</b>. Counted alongside the {fmtUSD(adi.tvl_defillama_visible)} of Uniswap LP liquidity, ADI's total on-chain TVL is <b>{fmtUSD(adi.tvl_with_ddsc)}</b>, giving a Mcap/TVL ratio of <b>{fmtX(adi.mcaptvl_with_ddsc, 2)}</b>. That's growth-priced but no longer an outlier: above Mantle ({fmtX(5.83)}) and Manta ({fmtX(5.27)}), below World Chain ({fmtX(24.39)}). The audit's widely-cited <b>{fmtX(adi.mcaptvl, 0)}</b> headline is a measurement gap, DefiLlama doesn't yet index DDSC. With IHC's <b>$30M institutional transaction</b> now executed on-chain, the framing shifts from "token economics vs usage" toward <em>data-layer integrity</em> (Concern #7) plus the still-real liquidity gap (0.15% daily turnover).
                     </div>
                   </div>
 
@@ -1526,9 +1594,64 @@
                         That gap is also a data-layer issue if real DEX activity exists, or a real-usage issue if it doesn't. Either way it's separate from the Mcap/TVL story and needs its own answer.
                       </p>
 
+                      <h3 className="report-h2"><span className="num">05</span>Real institutional usage is on-chain</h3>
+                      <p className="report-p">
+                        The clearest counter to "the chain has no real activity" is the IHC transaction. <b>International Holding Company</b>, Abu Dhabi-based and valued at $233B, executed a <b>$30M (110M AED) DDSC transaction on ADI Chain</b> in partnership with First Abu Dhabi Bank and Sirius International Holding. It is reported as the first major corporate-scale transfer of a UAE Central Bank-regulated digital currency.
+                      </p>
+                      <div className="report-callout">
+                        "The 110 million AED ($30 million) DDSC transaction on ADI Chain marks the start of a new era; institutional digital assets are not just feasible, but now scalable and efficient at large volumes."
+                        <br/><span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>Syed Basar Shueb, CEO, International Holding Company</span>
+                      </div>
+                      <p className="report-p">
+                        Two things this changes about the audit narrative. <b>First</b>, the "no real proof points on the flagship page" critique (Concern #4) gets a verifiable, named institutional anchor. <b>Second</b>, the $30M IHC flow is roughly the same size as the entire current DDSC supply, suggesting the chain is actively processing real corporate-scale value, not just holding minted-but-static balances.
+                      </p>
+
+                      <h3 className="report-h2"><span className="num">06</span>UAE stablecoin landscape, for context</h3>
+                      <p className="report-p">
+                        DDSC sits inside a small but growing set of AED-regulated stablecoins. Its differentiator is the institutional backing axis (IHC + FAB + Sirius) and operation on a public L2 with named regulator alignment.
+                      </p>
+                      <div className="report-callout" style={{ padding: 0, background: 'transparent', borderLeft: 'none' }}>
+                        <table className="data-table" style={{ marginTop: 4 }}>
+                          <thead>
+                            <tr>
+                              <th>Stablecoin</th>
+                              <th>Backer / institution</th>
+                              <th>Collateral</th>
+                              <th>Blockchain</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr style={{ background: 'rgba(15,157,88,0.04)', fontWeight: 600 }}>
+                              <td>DDSC</td>
+                              <td>IHC, FAB, Sirius</td>
+                              <td>AED</td>
+                              <td>ADI Chain (L2)</td>
+                            </tr>
+                            <tr>
+                              <td>AE Coin</td>
+                              <td className="muted">Al Maryah Community Bank</td>
+                              <td className="muted">AED</td>
+                              <td className="muted">Internal bank network</td>
+                            </tr>
+                            <tr>
+                              <td>AEDZ</td>
+                              <td className="muted">Zand Bank</td>
+                              <td className="muted">AED</td>
+                              <td className="muted">Public, multi-chain</td>
+                            </tr>
+                            <tr>
+                              <td>USDU</td>
+                              <td className="muted">Authorized FSRA operators</td>
+                              <td className="muted">USD</td>
+                              <td className="muted">FSRA-regulated</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
                       <div className="report-footer">
                         <span>ADI · L2 Benchmark</span>
-                        <span>Sources: DefiLlama, rpc.adifoundation.ai · n = 30 peer L2s</span>
+                        <span>Sources: DefiLlama, rpc.adifoundation.ai, IHC announcement · n = 30 peer L2s</span>
                       </div>
                     </article>
 
@@ -1558,6 +1681,9 @@
                       <p className="report-p">
                         DDSC explains the TVL gap. It does not explain the volume gap. DefiLlama shows $0/day DEX volume on ADI Chain and the cross-venue aggregate is $610K against $418M Mcap, a 0.15% turnover. Two possibilities, and we need to know which: <b>(a)</b> ADI's DEXes have real swap activity but DefiLlama's volume adapter isn't indexing them, in which case this is the same data-layer story as DDSC, or <b>(b)</b> DEX activity is genuinely thin because the chain is early. Either is fixable, but the fix is different.
                       </p>
+                      <p className="report-p">
+                        <b>Important nuance:</b> the volume gap is about <em>token trading</em>, not <em>chain usage</em>. IHC's $30M DDSC transaction settled on-chain is real corporate-scale value movement that doesn't show up in DEX-volume metrics at all. The right read is that ADI is processing real institutional flow even though its native-token secondary market remains thin.
+                      </p>
 
                       <h3 className="report-h2"><span className="num">04</span>What to do this quarter</h3>
                       <p className="report-p">
@@ -1581,7 +1707,7 @@
                       </p>
 
                       <div className="report-callout">
-                        <strong>Bottom line:</strong> ADI's on-chain Mcap/TVL is <strong>{fmtX(adi.mcaptvl_with_ddsc, 2)}</strong>, growth-priced and above the L2 median but defensible: peer to Mantle, Manta, and several other early L2s with restricted distribution. The audit's 206× is real but is measuring DefiLlama's adapter coverage, not ADI Chain. The 90-day work has three parts: (a) submit the DDSC adapter to DefiLlama so the public ratio matches on-chain, (b) keep DDSC issuance and other real TVL growing to compress the ratio toward the L2 median, and (c) address the volume gap (0.15% turnover) on its own track. Float concentration remains a separate disclosure question that the TVL story doesn't solve.
+                        <strong>Bottom line:</strong> ADI's on-chain Mcap/TVL is <strong>{fmtX(adi.mcaptvl_with_ddsc, 2)}</strong>, growth-priced and above the L2 median but defensible: peer to Mantle, Manta, and several other early L2s with restricted distribution. IHC's <strong>$30M institutional transaction</strong> is the named proof that real corporate value is moving through the chain, not just sitting in mint balances. The audit's 206× is real but is measuring DefiLlama's adapter coverage, not ADI Chain. The 90-day work has three parts: (a) submit the DDSC adapter to DefiLlama so the public ratio matches on-chain, (b) keep DDSC issuance and other real TVL growing (the IHC flow shows institutional appetite is real) to compress the ratio toward the L2 median, and (c) address the volume gap (0.15% turnover) on its own track. Float concentration remains a separate disclosure question that the TVL story doesn't solve.
                       </div>
 
                       <div className="report-footer">
