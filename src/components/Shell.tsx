@@ -168,18 +168,16 @@ export function Ticker({ adi, cohorts }: TickerProps) {
   );
 }
 
-/* ─── Top bar (title + metric toggle + cmd hint + LIVE) ───── */
+/* ─── Top bar (title + cmd hint + LIVE) ───── */
 interface TopBarProps {
   activeLabel: string;
-  metric: Metric;
-  setMetric: (m: Metric) => void;
   onCmd: () => void;
   asOf: string;
   onRefresh: () => void;
   refreshing: boolean;
 }
 
-export function TopBar({ activeLabel, metric, setMetric, onCmd, asOf, onRefresh, refreshing }: TopBarProps) {
+export function TopBar({ activeLabel, onCmd, asOf, onRefresh, refreshing }: TopBarProps) {
   return (
     <nav className="top-nav">
       <div className="top-nav-inner">
@@ -187,7 +185,6 @@ export function TopBar({ activeLabel, metric, setMetric, onCmd, asOf, onRefresh,
           <span className="brand-title">{activeLabel} · ADI L2 Benchmark</span>
         </div>
         <div className="nav-cluster">
-          <MetricToggle metric={metric} setMetric={setMetric} />
           <span className="cmd-hint" onClick={onCmd} title="Open command palette (⌘K or /)">
             ⌘K<span className="kbd">/</span>
           </span>
@@ -210,23 +207,24 @@ export function TopBar({ activeLabel, metric, setMetric, onCmd, asOf, onRefresh,
   );
 }
 
+/** Inline Mcap/FDV toggle, used inside chart widget headers. */
 export function MetricToggle({ metric, setMetric }: { metric: Metric; setMetric: (m: Metric) => void }) {
   return (
     <div
       style={{
         display: 'inline-flex', alignItems: 'center',
-        marginRight: 8, border: '1px solid var(--border-bright)',
+        border: '1px solid var(--border-bright)',
         borderRadius: 3, overflow: 'hidden',
       }}
-      title="Switch the valuation lens used in scatter, heatmap, and 'Where ADI sits'. Mcap = price × circulating. FDV = price × max supply (client-preferred for apples-to-apples comparison)."
+      title="Switch this chart's Y axis. Mcap = price × circulating. FDV = price × max supply (client-preferred for apples-to-apples comparison)."
     >
       <button
         onClick={() => setMetric('mcap')}
         style={{
-          padding: '4px 10px', fontFamily: 'var(--font-mono)',
-          fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+          padding: '3px 9px', fontFamily: 'var(--font-mono)',
+          fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          background: metric === 'mcap' ? 'rgba(255,139,77,0.10)' : 'transparent',
+          background: metric === 'mcap' ? 'rgba(255,139,77,0.12)' : 'transparent',
           color: metric === 'mcap' ? 'var(--accent-orange)' : 'var(--text-muted)',
           border: 'none', cursor: 'pointer',
         }}
@@ -234,13 +232,12 @@ export function MetricToggle({ metric, setMetric }: { metric: Metric; setMetric:
       <button
         onClick={() => setMetric('fdv')}
         style={{
-          padding: '4px 10px', fontFamily: 'var(--font-mono)',
-          fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+          padding: '3px 9px', fontFamily: 'var(--font-mono)',
+          fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          background: metric === 'fdv' ? 'rgba(255,139,77,0.10)' : 'transparent',
+          background: metric === 'fdv' ? 'rgba(255,139,77,0.12)' : 'transparent',
           color: metric === 'fdv' ? 'var(--accent-orange)' : 'var(--text-muted)',
-          border: 'none', cursor: 'pointer',
-          borderLeft: '1px solid var(--border-bright)',
+          border: 'none', borderLeft: '1px solid var(--border-bright)', cursor: 'pointer',
         }}
       >FDV</button>
     </div>

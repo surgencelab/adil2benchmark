@@ -23,14 +23,40 @@ GROWTHEPIE_SLUG = {
     "Movement":"movement","BOB":"bob","MegaETH":"megaeth","Celo":"celo","Fraxtal":"fraxtal",
 }
 
-# Slug map: dashboard chain name -> coingecko coin id
+# Slug map: dashboard chain name -> coingecko coin id (verified against coingecko.com)
 COINGECKO_ID = {
-    "Arbitrum":"arbitrum","OP Mainnet":"optimism","Mantle":"mantle","Linea":"linea",
-    "World Chain":"worldcoin-wld","ZKsync Era":"zksync","Scroll":"scroll","Manta":"manta-network",
-    "Metis":"metis-token","Mode":"mode","Boba":"boba-network","Movement":"movement-network",
-    "Polygon zkEVM":None,"Arbitrum Nova":None,"Blast":"blast","Celo":"celo","Fraxtal":"fraxtal",
-    "MegaETH":"megaeth","Sophon":"sophon","Lisk":"lisk","Cyber":"cyber","BOB":"bob-build-on-bitcoin",
-    "Taiko":None,"Mantle":"mantle","Cronos zkEVM":"cronos-zkevm-cro",
+    "Arbitrum":     "arbitrum",
+    "OP Mainnet":   "optimism",
+    "Mantle":       "mantle",
+    "Linea":        "linea",
+    "World Chain":  "worldcoin-wld",
+    "ZKsync Era":   "zksync",
+    "Scroll":       "scroll",
+    "Manta":        "manta-network",
+    "Metis":        "metis-token",
+    "Mode":         "mode",
+    "Boba":         "boba-network",
+    "Movement":     "movement",          # was movement-network
+    "Polygon zkEVM": None,
+    "Arbitrum Nova": None,
+    "Blast":        "blast",
+    "Celo":         "celo",
+    "Fraxtal":      "fraxtal",
+    "MegaETH":      "megaeth",
+    "Sophon":       "sophon",
+    "Lisk":         "lisk",
+    "Cyber":        "cyber",
+    "BOB":          "bob-build-on-bitcoin",
+    "Taiko":        None,
+    "Cronos zkEVM": "cronos-zkevm-cro",
+    # User-provided CG slugs (fix for previously-missing data)
+    "Fuel Ignition": "fuel-network",
+    "IOTA EVM":     "iota",
+    "LightLink":    "lightlink",
+    "Superseed":    "superseed",
+    "Pepu":         "pepe-unchained",
+    "Moonchain":    "moonchain-2",
+    "Mind Network": "mind-network",
 }
 
 def curl_json(url):

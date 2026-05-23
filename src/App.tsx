@@ -134,7 +134,6 @@ export default function App() {
         <Ticker adi={adi} cohorts={data.cohorts} />
         <TopBar
           activeLabel={activeLabel}
-          metric={metric} setMetric={setMetric}
           onCmd={() => setCmdOpen(true)}
           asOf={data.asOf}
           onRefresh={refresh}
@@ -188,7 +187,6 @@ export default function App() {
       <Ticker adi={adi} cohorts={data.cohorts} />
       <TopBar
         activeLabel={activeLabel}
-        metric={metric} setMetric={setMetric}
         onCmd={() => setCmdOpen(true)}
         asOf={data.asOf}
         onRefresh={refresh}
