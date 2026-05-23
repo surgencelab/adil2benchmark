@@ -2472,10 +2472,25 @@
                   <div className="term-grid">
 
                     <div className="widget w-12"
-                         title="Each dot is one L2. X = chain TVL (real capital deployed). Y = native token market cap. Both axes are log scale so chains 1000× apart in size fit on one chart. Dot size grows with Mcap. Dots near the dashed Mcap=TVL line are 'fairly priced' to usage; dots above are growth-priced; dots far above are outliers. The shaded green band is the healthy Mcap/TVL zone (0.3-5×). ADI is shown twice: solid dot = on-chain TVL incl. DDSC ($35M), open dashed dot = DefiLlama-only view ($2M). Hover a dot for chain detail; click to open the detail pane.">
+                         title="Each dot is one L2. X = chain TVL (real capital deployed). Y = native token Mcap (price × circulating) or FDV (price × max supply), toggled via the pills on this chart. Both axes are log scale. Dots near the dashed y=x line are 'fairly priced' to usage; dots above are growth-priced; dots far above are outliers. Shaded green band = healthy 0.3-5× ratio. ADI shown twice: solid dot = on-chain TVL incl. DDSC ($35M), open dashed dot = DefiLlama-only view ($2M). Hover a dot for chain detail; click to open the detail pane. Use the MCAP / FDV pills to swap the Y-axis lens.">
                       <div className="widget-head">
                         <span className="widget-title">{metric === 'fdv' ? 'FDV' : 'MCAP'} vs TVL · log-log</span>
-                        <span className="widget-meta">{D.rows.filter(r => r.tvl > 0 && (r.chain_mcap||0) > 0).length + 1} chains · click any dot · hover header to learn</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid var(--border-bright)', borderRadius: 3, overflow: 'hidden' }}
+                               title="Swap the Y-axis between Mcap (price × circulating) and FDV (price × max supply). Client-preferred is FDV.">
+                            <button onClick={() => setMetricPersist('mcap')}
+                                    style={{ padding: '3px 9px', fontFamily: 'var(--font-mono)', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                             background: metric === 'mcap' ? 'rgba(255,139,77,0.12)' : 'transparent',
+                                             color: metric === 'mcap' ? 'var(--accent-orange)' : 'var(--text-muted)',
+                                             border: 'none', cursor: 'pointer' }}>Mcap</button>
+                            <button onClick={() => setMetricPersist('fdv')}
+                                    style={{ padding: '3px 9px', fontFamily: 'var(--font-mono)', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                             background: metric === 'fdv' ? 'rgba(255,139,77,0.12)' : 'transparent',
+                                             color: metric === 'fdv' ? 'var(--accent-orange)' : 'var(--text-muted)',
+                                             border: 'none', borderLeft: '1px solid var(--border-bright)', cursor: 'pointer' }}>FDV</button>
+                          </div>
+                          <span className="widget-meta">{D.rows.filter(r => r.tvl > 0 && (r[metric === 'fdv' ? 'fdv_usd' : 'chain_mcap']||0) > 0).length + 1} chains · click any dot</span>
+                        </div>
                       </div>
                       <div className="widget-body flush">
                         <ScatterMcapVsTvl rows={D.rows} adi={adi} openDetail={openDetail} metric={metric} />
@@ -2536,10 +2551,24 @@
                     </div>
 
                     <div className="widget w-6"
-                         title={`Each tile is one L2, colored by ${ratioLabel} intensity. Green = healthy (under 2x), yellow = growth-priced (2-10x), amber = priced on expectation (10-50x), red = outlier (50x+). ADI outlined in orange. Click any tile to open the detail pane. Toggle Mcap/FDV at the top of the screen to swap the lens.`}>
+                         title={`Each tile is one L2, colored by ${ratioLabel} intensity. Green = healthy (under 2x), yellow = growth-priced (2-10x), amber = priced on expectation (10-50x), red = outlier (50x+). ADI outlined in orange. Use the MCAP / FDV pills below to swap the lens. Click any tile to open the detail pane.`}>
                       <div className="widget-head">
                         <span className="widget-title">{ratioLabel} heatmap</span>
-                        <span className="widget-meta">top 18 by {metric==='fdv'?'FDV':'Mcap'} · click for detail · hover header to learn</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid var(--border-bright)', borderRadius: 3, overflow: 'hidden' }}>
+                            <button onClick={() => setMetricPersist('mcap')}
+                                    style={{ padding: '3px 9px', fontFamily: 'var(--font-mono)', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                             background: metric === 'mcap' ? 'rgba(255,139,77,0.12)' : 'transparent',
+                                             color: metric === 'mcap' ? 'var(--accent-orange)' : 'var(--text-muted)',
+                                             border: 'none', cursor: 'pointer' }}>Mcap</button>
+                            <button onClick={() => setMetricPersist('fdv')}
+                                    style={{ padding: '3px 9px', fontFamily: 'var(--font-mono)', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                             background: metric === 'fdv' ? 'rgba(255,139,77,0.12)' : 'transparent',
+                                             color: metric === 'fdv' ? 'var(--accent-orange)' : 'var(--text-muted)',
+                                             border: 'none', borderLeft: '1px solid var(--border-bright)', cursor: 'pointer' }}>FDV</button>
+                          </div>
+                          <span className="widget-meta">top 18 · click for detail</span>
+                        </div>
                       </div>
                       <div className="widget-body">
                         <div className="heatmap">
