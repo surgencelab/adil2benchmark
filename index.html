@@ -589,6 +589,72 @@
     /* Sparkline */
     .spark { display: inline-block; vertical-align: middle; }
 
+    /* Position read (Overview "where ADI sits" panel) */
+    .position-read {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+      padding: 14px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 4px;
+      position: relative; overflow: hidden;
+    }
+    .position-read::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      opacity: 0.3;
+    }
+    .position-read .pr-cell {
+      padding: 4px 10px; border-left: 2px solid var(--border);
+    }
+    .position-read .pr-cell:first-child { border-left: none; padding-left: 4px; }
+    .position-read .pr-label {
+      font-size: 10px; color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.1em; font-weight: 600; margin-bottom: 4px;
+      font-family: var(--font-mono);
+    }
+    .position-read .pr-value {
+      font-family: var(--font-sans); font-size: 13px; line-height: 1.5;
+      color: var(--foreground);
+    }
+    .position-read .pr-value b { color: var(--accent-orange); }
+    .position-read .pr-value .danger { color: var(--accent-red); }
+    .position-read .pr-value .warn   { color: var(--accent-yellow); }
+
+    /* Navigation cards on Overview (jumps to other pages) */
+    .nav-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .nav-card {
+      display: flex; flex-direction: column; gap: 6px;
+      padding: 14px 16px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+      cursor: pointer; transition: border-color .15s ease, transform .15s ease;
+      position: relative; overflow: hidden;
+    }
+    .nav-card:hover {
+      border-color: var(--accent-orange); transform: translateY(-1px);
+    }
+    .nav-card::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      opacity: 0.35;
+    }
+    .nav-card .nc-eyebrow {
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--accent-orange); font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .nav-card .nc-title {
+      font-family: var(--font-sans); font-size: 15px; font-weight: 600;
+      color: var(--foreground);
+    }
+    .nav-card .nc-sub {
+      font-family: var(--font-sans); font-size: 11.5px;
+      color: var(--text-muted); line-height: 1.5;
+    }
+    .nav-card .nc-arrow {
+      font-family: var(--font-mono); font-size: 12px; color: var(--accent-orange);
+      align-self: flex-end; margin-top: auto;
+    }
+
     /* ────── Delta chip ───────────────────────────────────── */
     .delta {
       display: inline-block; padding: 1px 5px; margin-left: 4px;
@@ -2228,42 +2294,35 @@
             <div className="main-inner">
 
               {active === 'overview' && (() => {
-                // Pre-compute lists used inside widgets
-                const topByMcapTvl = [...D.rows]
-                  .filter(r => r.chain_mcap && r.tvl)
-                  .map(r => ({...r, _mt: r.chain_mcap/r.tvl}))
-                  .sort((a,b) => b._mt - a._mt)
-                  .slice(0, 10);
-                const topByTvl = [...D.rows]
-                  .filter(r => r.tvl > 0)
-                  .sort((a,b) => b.tvl - a.tvl)
-                  .slice(0, 10);
-                const nonAirdrop = D.rows.filter(r => r.has_token && !r.airdrop_distributed)
-                  .sort((a,b) => (b.chain_mcap||0) - (a.chain_mcap||0));
                 const adiMT = adi.mcaptvl_with_ddsc;
-
+                // Closest cohort peer by Mcap/TVL
+                const peers = D.rows
+                  .filter(r => r.has_token && !r.airdrop_distributed && r.chain_mcap && r.tvl)
+                  .map(r => ({...r, _mt: r.chain_mcap/r.tvl, _dist: Math.abs((r.chain_mcap/r.tvl) - adiMT)}))
+                  .sort((a,b) => a._dist - b._dist)
+                  .slice(0, 3);
                 return (
                   <div className="term-grid">
-                    {/* ────────── ROW 1: ADI snapshot ────────── */}
-                    <div className="widget w-6" title="ADI's six headline numbers. Mcap is the public token cap (price × circulating). TVL is the dollar value bridged + minted on ADI Chain, including the $33.2M of DDSC stablecoin verified live via RPC. FDV is fully-diluted (price × max supply). Mcap/TVL and FDV/TVL are the priciness ratios. Healthy L2 range is 0.3-5×. Turnover is 24h volume / Mcap. &lt;1%/day is conventionally 'illiquid'.">
+
+                    {/* Row 1: ADI KPIs across the top */}
+                    <div className="widget w-12" title="ADI's six headline numbers. Mcap is the public token cap (price × circulating). TVL is the dollar value on ADI Chain, including $33.2M of DDSC stablecoin verified live via RPC. FDV is fully-diluted. Mcap/TVL and FDV/TVL show how expensive the token is vs real usage; healthy L2 range is 0.3-5×. Turnover is 24h volume / Mcap; below 1%/day is conventionally illiquid.">
                       <div className="widget-head">
                         <span className="widget-title">ADI · key metrics</span>
-                        <span className="widget-meta">On-chain · verified · hover for explanation</span>
+                        <span className="widget-meta">On-chain · verified · hover header to learn</span>
                       </div>
                       <div className="widget-body">
-                        <div className="stat-row" style={{ marginBottom: 12 }}>
+                        <div className="stat-row" style={{ justifyContent: 'space-between' }}>
                           <div className="stat"><div className="l">Mcap</div><div className="v">{fmtUSD(adi.token_mcap)}</div><div className="s">CG · Kraken</div></div>
                           <div className="stat"><div className="l">TVL (on-chain)</div><div className="v">{fmtUSD(adi.tvl_with_ddsc)}</div><div className="s">incl. DDSC</div></div>
                           <div className="stat"><div className="l">FDV</div><div className="v">{fmtUSD(adi.fdv_usd)}</div><div className="s">1B max supply</div></div>
-                        </div>
-                        <div className="stat-row">
-                          <div className="stat"><div className="l">Mcap/TVL</div><div className="v warn">{fmtX(adiMT,2)}</div><div className="s">Mid med {fmtX(sum.Mid.mcap_tvl_med,2)}</div></div>
-                          <div className="stat"><div className="l">FDV/TVL</div><div className="v warn">{fmtX(adi.fdv_usd/adi.tvl_with_ddsc,1)}</div><div className="s">unlock overhang</div></div>
+                          <div className="stat"><div className="l">Mcap / TVL</div><div className="v warn">{fmtX(adiMT, 2)}</div><div className="s">Mid med {fmtX(sum.Mid.mcap_tvl_med,2)}</div></div>
+                          <div className="stat"><div className="l">FDV / TVL</div><div className="v warn">{fmtX(adi.fdv_usd/adi.tvl_with_ddsc, 1)}</div><div className="s">unlock overhang</div></div>
                           <div className="stat"><div className="l">24h turnover</div><div className="v down">{fmtPct(adi.turnover_vol_mc_pct,2)}</div><div className="s">below 1% illiquid</div></div>
                         </div>
                       </div>
                     </div>
 
+                    {/* Row 2: TVL composition (left) + ADI position read (right) */}
                     <div className="widget w-6" title="What makes up ADI's $35.2M TVL. The Uniswap LP figure is what DefiLlama indexes today. The DDSC figure is the on-chain totalSupply() of the CBUAE-licensed DDSC stablecoin (1 DDSC = 1 AED, reserves at FAB), converted to USD at the 3.6725 peg. The audit's '$2M / 206×' headline misses the DDSC line.">
                       <div className="widget-head">
                         <span className="widget-title">TVL composition</span>
@@ -2276,220 +2335,71 @@
                             <tr><td>Uniswap V3 LP</td><td className="right">{fmtUSD(adi.tvl_defillama_visible)}</td><td className="muted">DefiLlama</td></tr>
                             <tr><td>DDSC (1 AED peg, FAB)</td><td className="right">{fmtUSD(adi.ddsc_tvl_usd)}</td><td className="muted">eth_call</td></tr>
                             <tr style={{ background: 'rgba(255,139,77,0.08)', fontWeight: 600 }}>
-                              <td>Total</td><td className="right">{fmtUSD(adi.tvl_with_ddsc)}</td><td className="muted">sum</td></tr>
+                              <td>Total</td><td className="right">{fmtUSD(adi.tvl_with_ddsc)}</td><td className="muted">sum</td>
+                            </tr>
                             <tr><td className="muted">DefiLlama view (no DDSC)</td><td className="right" style={{ color: 'var(--accent-red)' }}>{fmtUSD(adi.tvl_defillama_visible)}</td><td className="muted">audit ref</td></tr>
                           </tbody>
                         </table>
                       </div>
                     </div>
 
-                    {/* ────────── ROW 2: Tier benchmarks ────────── */}
-                    <div className="widget w-12" title="The 30 most active L2/rollups, bucketed by TVL: Large (top 5), Mid (6-15), Small (16-30). Each row shows the median value of that tier across TVL, Mcap, 24h DEX volume, Mcap/TVL, and Vol/TVL. The 'Position of ADI' column tells you which tier ADI's Mcap/TVL most resembles. The last row pins ADI's own numbers for direct comparison.">
+                    <div className="widget w-6" title="A plain-English read of where ADI lands across the L2 universe given everything in the dataset.">
                       <div className="widget-head">
-                        <span className="widget-title">L2 tier medians</span>
-                        <span className="widget-meta">30 active L2s · auto-bucketed by TVL · hover to learn</span>
-                      </div>
-                      <div className="widget-body flush">
-                        <table className="data-table">
-                          <thead>
-                            <tr>
-                              <th>Tier</th>
-                              <th className="right">n</th>
-                              <th className="right">TVL med</th>
-                              <th className="right">Mcap med</th>
-                              <th className="right">24h DEX</th>
-                              <th className="right">M/T med</th>
-                              <th className="right">V/T med</th>
-                              <th>Position of ADI</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {[
-                              ['Large', sum.Large, 'top 5'],
-                              ['Mid',   sum.Mid,   '6-15'],
-                              ['Small', sum.Small, '16-30'],
-                            ].map(([t, s, sub]) => (
-                              <tr key={t}>
-                                <td>{t}<span className="muted" style={{ marginLeft: 6, fontSize: 10 }}>{sub}</span></td>
-                                <td className="right">{s.n}</td>
-                                <td className="right">{fmtUSD(s.tvl_med)}</td>
-                                <td className="right">{fmtUSD(s.mcap_med)}</td>
-                                <td className="right">{fmtUSD(s.dex_v24_med, 2)}</td>
-                                <td className="right">{fmtX(s.mcap_tvl_med, 2)}</td>
-                                <td className="right">{fmtPct(s.vol_tvl_pct_med, 2)}</td>
-                                <td className="muted" style={{ fontSize: 10.5 }}>
-                                  {adiMT > s.mcap_tvl_med
-                                    ? `ADI M/T ${(adiMT/s.mcap_tvl_med).toFixed(1)}× this tier`
-                                    : `ADI M/T below this tier`}
-                                </td>
-                              </tr>
-                            ))}
-                            <tr style={{ background: 'rgba(255,90,95,0.08)', fontWeight: 600 }}>
-                              <td style={{ color: 'var(--accent-red)' }}>ADI Chain</td>
-                              <td className="right muted">1</td>
-                              <td className="right" style={{ color: 'var(--accent-red)' }}>{fmtUSD(adi.tvl_with_ddsc)}</td>
-                              <td className="right" style={{ color: 'var(--accent-red)' }}>{fmtUSD(adi.token_mcap)}</td>
-                              <td className="right" style={{ color: 'var(--accent-red)' }}>{fmtUSD(adi.dex_v24, 2)}</td>
-                              <td className="right" style={{ color: 'var(--accent-red)' }}>{fmtX(adiMT,2)}</td>
-                              <td className="right" style={{ color: 'var(--accent-red)' }}>0.00%</td>
-                              <td className="muted" style={{ fontSize: 10.5, color: 'var(--accent-red)' }}>private distribution, on-chain DDSC</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-
-                    {/* ────────── ROW 3: Rankings (left), Non-airdrop peers (right) ────────── */}
-                    {/* Heatmap widget */}
-                    <div className="widget w-6" title="Each tile is one L2. Color shows how overpriced the token is vs the chain's actual usage (Mcap ÷ TVL): green = under 2× (healthy), yellow = 2-10× (growth-priced), amber = 10-50× (priced on expectation), red = 50×+ (outlier). ADI is outlined in orange. Click any tile for full chain detail.">
-                      <div className="widget-head">
-                        <span className="widget-title">Mcap / TVL heatmap</span>
-                        <span className="widget-meta">click any L2 for full detail · hover to learn</span>
+                        <span className="widget-title">Where ADI sits</span>
+                        <span className="widget-meta">peer + tier + audit lens</span>
                       </div>
                       <div className="widget-body">
-                        <div className="heatmap">
-                          {[...D.rows].filter(r => r.chain_mcap && r.tvl)
-                            .map(r => ({...r, _mt: r.chain_mcap/r.tvl}))
-                            .sort((a,b) => b.chain_mcap - a.chain_mcap)
-                            .slice(0, 18)
-                            .concat([{ name: 'ADI Chain', symbol: 'ADI', _mt: adiMT, chain_mcap: adi.token_mcap, _adi: true, ...adi }])
-                            .map((r) => {
-                              // color intensity based on M/T anomaly
-                              const mt = r._mt;
-                              let bg, fg;
-                              if (mt > 50)      { bg = 'rgba(255,90,95,0.30)';  fg = 'var(--accent-red)'; }
-                              else if (mt > 10) { bg = 'rgba(245,181,68,0.22)'; fg = 'var(--accent-yellow)'; }
-                              else if (mt > 2)  { bg = 'rgba(245,181,68,0.10)'; fg = 'var(--foreground)'; }
-                              else              { bg = 'rgba(46,204,113,0.10)'; fg = 'var(--accent-green)'; }
-                              return (
-                                <div key={r.name}
-                                     className={`heat-cell ${r._adi ? 'adi' : ''}`}
-                                     style={{ background: bg }}
-                                     onClick={() => openDetail(r)}
-                                     title={`${r.name} · ${fmtUSD(r.chain_mcap)} mcap`}>
-                                  <span className="hname">{r.name}</span>
-                                  <span className="hsym">{r.symbol || '-'}</span>
-                                  <span className="hval" style={{ color: fg }}>{fmtX(mt, 2)}</span>
+                        <div className="position-read">
+                          <div className="pr-cell">
+                            <div className="pr-label">Peer cohort</div>
+                            <div className="pr-value">
+                              <b>Non-airdrop L2s</b> (private distribution).
+                              Median M/T <b>{fmtX(C.NonAirdrop?.mcap_tvl_med,2)}</b>.
+                              ADI's {fmtX(adiMT,2)} is <span className="warn">{(adiMT/(C.NonAirdrop?.mcap_tvl_med||1)).toFixed(1)}× the cohort median</span>.
+                            </div>
+                          </div>
+                          <div className="pr-cell">
+                            <div className="pr-label">Nearest peers (by M/T)</div>
+                            <div className="pr-value">
+                              {peers.map((p, i) => (
+                                <div key={p.name}>
+                                  <b>{p.name}</b> {fmtX(p._mt,2)}
                                 </div>
-                              );
-                            })}
+                              ))}
+                            </div>
+                          </div>
+                          <div className="pr-cell">
+                            <div className="pr-label">Audit-view gap</div>
+                            <div className="pr-value">
+                              DefiLlama M/T <span className="danger">{fmtX(adi.mcaptvl,0)}</span> (no DDSC indexed).
+                              On-chain truth is <b>{fmtX(adiMT,2)}</b>. The gap is a data-layer problem, not fundamentals.
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Top 10 · Mcap/TVL with sparklines */}
-                    <div className="widget w-6" title="The 10 L2 tokens most expensive relative to their chain's TVL. High Mcap/TVL means the market values the token far above the chain's current usage. The 30-day sparkline shows the native token's price trend (red = down, green = up). ADI is pinned at the bottom for context. Click any row to see the full chain detail.">
-                      <div className="widget-head">
-                        <span className="widget-title">Top 10 · Mcap/TVL + 30d trend</span>
-                        <span className="widget-meta">click row for detail · hover to learn</span>
-                      </div>
-                      <div className="widget-body flush">
-                        <table className="data-table">
-                          <thead>
-                            <tr>
-                              <th>#</th>
-                              <th>Chain</th>
-                              <th className="right">M/T</th>
-                              <th className="right">Mcap</th>
-                              <th>30d</th>
-                              <th className="right">30d Δ</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {topByMcapTvl.map((r, i) => (
-                              <tr key={r.name} onClick={() => openDetail(r)} style={{ cursor: 'pointer' }}>
-                                <td className="muted">{i+1}</td>
-                                <td>{r.name}<span className="muted" style={{ marginLeft: 4, fontSize: 10 }}>{r.symbol}</span></td>
-                                <td className={`right ${r._mt > 50 ? 'down' : r._mt > 10 ? 'warn' : ''}`} style={{ color: r._mt > 50 ? 'var(--accent-red)' : r._mt > 10 ? 'var(--accent-yellow)' : null, fontWeight: 700 }}>{fmtX(r._mt, 2)}</td>
-                                <td className="right">{fmtUSD(r.chain_mcap)}</td>
-                                <td><Spark data={r.sparkline_30d} /></td>
-                                <td className="right"><Delta pct={r.price_chg_30d} /></td>
-                              </tr>
-                            ))}
-                            <tr className="row-adi" onClick={() => openDetail({...adi, name: 'ADI Chain', symbol: 'ADI'})} style={{ cursor: 'pointer' }}>
-                              <td>·</td>
-                              <td>ADI Chain<span className="muted" style={{ marginLeft: 4, fontSize: 10 }}>ADI</span></td>
-                              <td className="right" style={{ color: 'var(--accent-red)', fontWeight: 700 }}>{fmtX(adiMT, 2)}</td>
-                              <td className="right">{fmtUSD(adi.token_mcap)}</td>
-                              <td><Spark data={adi.sparkline_30d} /></td>
-                              <td className="right"><Delta pct={adi.price_chg_30d} /></td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-
-                    {/* Top 10 · TVL with deltas */}
-                    <div className="widget w-6" title="The 10 L2s with the most real capital deployed in their apps. The 7d and 30d deltas show whether TVL is growing or shrinking on each chain. Click any row for full detail.">
-                      <div className="widget-head">
-                        <span className="widget-title">Top 10 · TVL + 7d/30d deltas</span>
-                        <span className="widget-meta">largest L2 economies · hover to learn</span>
-                      </div>
-                      <div className="widget-body flush">
-                        <table className="data-table">
-                          <thead>
-                            <tr>
-                              <th>#</th>
-                              <th>Chain</th>
-                              <th className="right">TVL</th>
-                              <th className="right">7d</th>
-                              <th className="right">30d</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {topByTvl.map((r, i) => (
-                              <tr key={r.name} onClick={() => openDetail(r)} style={{ cursor: 'pointer' }}>
-                                <td className="muted">{i+1}</td>
-                                <td>{r.name}<span className="muted" style={{ marginLeft: 4, fontSize: 10 }}>{r.symbol || '-'}</span></td>
-                                <td className="right" style={{ fontWeight: 600 }}>{fmtUSD(r.tvl)}</td>
-                                <td className="right"><Delta pct={r.tvl_chg_7d} /></td>
-                                <td className="right"><Delta pct={r.tvl_chg_30d} /></td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-
-                    {/* Non-airdrop peer cohort */}
-                    <div className="widget w-6" title="The apples-to-apples peer set for ADI: L2 native tokens that did NOT distribute via public airdrop. These tend to have tighter float and higher Mcap/TVL ratios (cohort median ~5.6×) compared to airdrop-distributed tokens (cohort median ~1.4×). ADI's 11.88× sits ~2.1× this peer median. Click any row for full detail.">
-                      <div className="widget-head">
-                        <span className="widget-title">Non-airdrop peers · ADI cohort</span>
-                        <span className="widget-meta">{nonAirdrop.length + 1} chains · click for detail · hover to learn</span>
-                      </div>
-                      <div className="widget-body flush">
-                        <table className="data-table">
-                          <thead>
-                            <tr>
-                              <th>Chain</th>
-                              <th className="right">TVL</th>
-                              <th className="right">Mcap</th>
-                              <th className="right">M/T</th>
-                              <th>30d</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr className="row-adi" onClick={() => openDetail({...adi, name: 'ADI Chain', symbol: 'ADI'})} style={{ cursor: 'pointer' }}>
-                              <td>ADI Chain<span className="muted" style={{ marginLeft: 4, fontSize: 10 }}>ADI</span></td>
-                              <td className="right" style={{ color: 'var(--accent-red)' }}>{fmtUSD(adi.tvl_with_ddsc)}</td>
-                              <td className="right" style={{ color: 'var(--accent-red)' }}>{fmtUSD(adi.token_mcap)}</td>
-                              <td className="right" style={{ color: 'var(--accent-red)', fontWeight: 700 }}>{fmtX(adiMT, 2)}</td>
-                              <td><Spark data={adi.sparkline_30d} /></td>
-                            </tr>
-                            {nonAirdrop.map((r) => {
-                              const mt = r.chain_mcap && r.tvl ? r.chain_mcap/r.tvl : null;
-                              return (
-                                <tr key={r.name} onClick={() => openDetail(r)} style={{ cursor: 'pointer' }}>
-                                  <td>{r.name}<span className="muted" style={{ marginLeft: 4, fontSize: 10 }}>{r.symbol}</span></td>
-                                  <td className="right">{fmtUSD(r.tvl)}</td>
-                                  <td className="right">{fmtUSD(r.chain_mcap)}</td>
-                                  <td className={`right ${mt > 50 ? 'down' : mt > 10 ? 'warn' : ''}`} style={{ color: mt > 50 ? 'var(--accent-red)' : mt > 10 ? 'var(--accent-yellow)' : null, fontWeight: 600 }}>{mt ? fmtX(mt, 2) : '-'}</td>
-                                  <td><Spark data={r.sparkline_30d} /></td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                    {/* Row 3: Navigation cards to deeper views */}
+                    <div className="w-12">
+                      <div className="nav-cards">
+                        <div className="nav-card" onClick={() => setActive('table')} title="Filter, sort, and drill into every L2/rollup in the dataset">
+                          <span className="nc-eyebrow">3 · L2 Universe</span>
+                          <span className="nc-title">Compare ADI to {D.rows.length} chains</span>
+                          <span className="nc-sub">Filter by distribution model, tier, FDV status. Click any row for full chain detail with a 30-day chart.</span>
+                          <span className="nc-arrow">Open table →</span>
+                        </div>
+                        <div className="nav-card" onClick={() => setActive('scatter')} title="See ADI's position visually against the L2 universe">
+                          <span className="nc-eyebrow">2 · Charts</span>
+                          <span className="nc-title">Where ADI sits on the map</span>
+                          <span className="nc-sub">Mcap vs TVL scatter (both ADI views shown) + Mcap/TVL trend over 90 days vs tier-median bands.</span>
+                          <span className="nc-arrow">Open charts →</span>
+                        </div>
+                        <div className="nav-card" onClick={() => setActive('report')} title="Plain-English briefing for stakeholders">
+                          <span className="nc-eyebrow">5 · Report</span>
+                          <span className="nc-title">Two-page findings &amp; implications</span>
+                          <span className="nc-sub">Methodology, headline numbers, what the data-layer gap means, IHC institutional proof point.</span>
+                          <span className="nc-arrow">Read report →</span>
+                        </div>
                       </div>
                     </div>
 
@@ -2498,28 +2408,121 @@
               })()}
 
 
-              {active === 'scatter' && (
-                <>
-                  <div className="page-header" style={{ marginBottom: 12 }}>
-                    <div className="page-eyebrow">Mcap vs TVL</div>
-                    <h1 className="page-title" style={{ fontSize: 22 }}>Position vs L2 universe</h1>
-                  </div>
-                  <div className="section"
-                       title="Each dot is one L2. X = chain TVL (real capital deployed). Y = native token market cap. Both axes are log scale so chains 1000× apart in size fit on one chart. Dot size grows with Mcap. Dots near the dashed Mcap=TVL line are 'fairly priced' to usage; dots above are growth-priced; dots far above are outliers. The shaded green band is the healthy Mcap/TVL zone (0.3-5×). ADI is shown twice: solid dot = on-chain TVL incl. DDSC ($35M), open dashed dot = DefiLlama-only view ($2M). Hover a dot for chain detail; click to open the detail pane.">
-                    <TuiPanel title="MCAP vs TVL · log–log" badge={`${D.rows.filter(r => r.tvl > 0 && (r.chain_mcap||0) > 0).length + 1} chains · hover or click any dot · hover header to learn`} flush>
-                      <ScatterMcapVsTvl rows={D.rows} adi={adi} openDetail={openDetail} />
-                    </TuiPanel>
-                  </div>
+              {active === 'scatter' && (() => {
+                const adiMT = adi.mcaptvl_with_ddsc;
+                const heatChains = [...D.rows]
+                  .filter(r => r.chain_mcap && r.tvl)
+                  .map(r => ({...r, _mt: r.chain_mcap/r.tvl}))
+                  .sort((a,b) => b.chain_mcap - a.chain_mcap)
+                  .slice(0, 18)
+                  .concat([{ name: 'ADI Chain', symbol: 'ADI', _mt: adiMT, _adi: true,
+                             chain_mcap: adi.token_mcap, tvl: adi.tvl_with_ddsc, ...adi }]);
+                const tvlLeader = [...D.rows]
+                  .filter(r => r.tvl > 0)
+                  .sort((a,b) => b.tvl - a.tvl)
+                  .slice(0, 10);
+                const maxTvl = Math.max(...tvlLeader.map(r => r.tvl));
+                return (
+                  <div className="term-grid">
 
-                  <Divider label="ADI Mcap/TVL vs tier-median bands · last 90 days" />
-                  <div className="section"
-                       title="How ADI's Mcap/TVL ratio has moved over the last 90 days vs the median ratio for each L2 tier. The shaded bands show the 25th-75th percentile spread within each tier; chains in the middle 50% of their cohort sit inside the band. ADI's red line shows the DefiLlama-visible view (no DDSC), which trends upward as the token price drifts down on flat indexed TVL. The on-chain ratio is much lower; this chart shows what an external analyst sees on DefiLlama today.">
-                    <TuiPanel title="MCAP / TVL over time" badge={`${D.history.windowDays}d window · tier medians + P25–P75 bands · hover header to learn`} flush>
-                      <McapTvlTrend history={D.history} adi={adi} />
-                    </TuiPanel>
+                    <div className="widget w-12"
+                         title="Each dot is one L2. X = chain TVL (real capital deployed). Y = native token market cap. Both axes are log scale so chains 1000× apart in size fit on one chart. Dot size grows with Mcap. Dots near the dashed Mcap=TVL line are 'fairly priced' to usage; dots above are growth-priced; dots far above are outliers. The shaded green band is the healthy Mcap/TVL zone (0.3-5×). ADI is shown twice: solid dot = on-chain TVL incl. DDSC ($35M), open dashed dot = DefiLlama-only view ($2M). Hover a dot for chain detail; click to open the detail pane.">
+                      <div className="widget-head">
+                        <span className="widget-title">MCAP vs TVL · log-log</span>
+                        <span className="widget-meta">{D.rows.filter(r => r.tvl > 0 && (r.chain_mcap||0) > 0).length + 1} chains · click any dot · hover header to learn</span>
+                      </div>
+                      <div className="widget-body flush">
+                        <ScatterMcapVsTvl rows={D.rows} adi={adi} openDetail={openDetail} />
+                      </div>
+                    </div>
+
+                    <div className="widget w-12"
+                         title="How ADI's Mcap/TVL ratio has moved over the last 90 days vs the median ratio for each L2 tier. The shaded bands show the 25th-75th percentile spread within each tier; chains in the middle 50% of their cohort sit inside the band. ADI's red line shows the DefiLlama-visible view (no DDSC), which trends upward as the token price drifts down on flat indexed TVL. The on-chain ratio is much lower; this chart shows what an external analyst sees on DefiLlama today.">
+                      <div className="widget-head">
+                        <span className="widget-title">Mcap / TVL over time</span>
+                        <span className="widget-meta">{D.history.windowDays}d window · tier medians + P25-P75 bands · hover header to learn</span>
+                      </div>
+                      <div className="widget-body flush">
+                        <McapTvlTrend history={D.history} adi={adi} />
+                      </div>
+                    </div>
+
+                    <div className="widget w-6"
+                         title="Top 10 L2s ranked by TVL, drawn as horizontal bars so size differences are immediate. Click any bar to open the detail pane.">
+                      <div className="widget-head">
+                        <span className="widget-title">TVL leaderboard</span>
+                        <span className="widget-meta">top 10 · click bar for detail · hover header to learn</span>
+                      </div>
+                      <div className="widget-body">
+                        {tvlLeader.map((r, i) => {
+                          const pct = (r.tvl / maxTvl) * 100;
+                          const mt = r.chain_mcap && r.tvl ? r.chain_mcap/r.tvl : null;
+                          return (
+                            <div key={r.name}
+                                 onClick={() => openDetail && openDetail(r)}
+                                 style={{ display: 'grid', gridTemplateColumns: '14px 110px 1fr 80px', gap: 8, alignItems: 'center', padding: '4px 0', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11.5 }}>
+                              <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>{i+1}</span>
+                              <span style={{ color: 'var(--foreground)' }}>{r.name}<span style={{ color: 'var(--text-muted)', fontSize: 10, marginLeft: 4 }}>{r.symbol || '-'}</span></span>
+                              <div style={{ position: 'relative', height: 14, background: 'var(--tint-soft)', borderRadius: 2 }}>
+                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`,
+                                              background: 'linear-gradient(90deg, var(--accent-orange), rgba(255,139,77,0.4))',
+                                              borderRadius: 2, opacity: 0.85 }} />
+                              </div>
+                              <span style={{ textAlign: 'right', color: 'var(--foreground)', fontWeight: 600 }}>{fmtUSD(r.tvl)}</span>
+                            </div>
+                          );
+                        })}
+                        {/* ADI row appended for context */}
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)',
+                                      display: 'grid', gridTemplateColumns: '14px 110px 1fr 80px', gap: 8, alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 11.5,
+                                      color: 'var(--accent-red)', fontWeight: 600, cursor: 'pointer' }}
+                             onClick={() => openDetail && openDetail({...adi, name: 'ADI Chain', symbol: 'ADI'})}>
+                          <span style={{ fontSize: 10 }}>·</span>
+                          <span>ADI Chain<span style={{ marginLeft: 4, fontSize: 10, opacity: 0.7 }}>ADI</span></span>
+                          <div style={{ position: 'relative', height: 14, background: 'var(--tint-soft)', borderRadius: 2 }}>
+                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0,
+                                          width: `${(adi.tvl_with_ddsc / maxTvl) * 100}%`,
+                                          background: 'var(--accent-red)', opacity: 0.7, borderRadius: 2 }} />
+                          </div>
+                          <span style={{ textAlign: 'right' }}>{fmtUSD(adi.tvl_with_ddsc)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="widget w-6"
+                         title="Each tile is one L2, sized roughly by market cap, colored by Mcap/TVL intensity. Green = healthy (under 2x), yellow = growth-priced (2-10x), amber = priced on expectation (10-50x), red = outlier (50x+). ADI outlined in orange. Click any tile to open the detail pane.">
+                      <div className="widget-head">
+                        <span className="widget-title">Mcap/TVL heatmap</span>
+                        <span className="widget-meta">top 18 by Mcap · click for detail · hover header to learn</span>
+                      </div>
+                      <div className="widget-body">
+                        <div className="heatmap">
+                          {heatChains.map((r) => {
+                            const mt = r._mt;
+                            let bg, fg;
+                            if (mt > 50)      { bg = 'rgba(255,90,95,0.30)';  fg = 'var(--accent-red)'; }
+                            else if (mt > 10) { bg = 'rgba(245,181,68,0.22)'; fg = 'var(--accent-yellow)'; }
+                            else if (mt > 2)  { bg = 'rgba(245,181,68,0.10)'; fg = 'var(--foreground)'; }
+                            else              { bg = 'rgba(46,204,113,0.10)'; fg = 'var(--accent-green)'; }
+                            return (
+                              <div key={r.name}
+                                   className={`heat-cell ${r._adi ? 'adi' : ''}`}
+                                   style={{ background: bg }}
+                                   onClick={() => openDetail && openDetail(r)}
+                                   title={`${r.name} · ${fmtUSD(r.chain_mcap)} mcap · ${fmtUSD(r.tvl)} TVL`}>
+                                <span className="hname">{r.name}</span>
+                                <span className="hsym">{r.symbol || '-'}</span>
+                                <span className="hval" style={{ color: fg }}>{fmtX(mt, 2)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
-                </>
-              )}
+                );
+              })()}
 
               {active === 'table' && (() => {
                 const FILTERS = [
