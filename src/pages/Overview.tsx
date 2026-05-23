@@ -4,15 +4,15 @@
  */
 import type { Dataset, Route, L2Row } from '../data/types';
 import { fmtUSD, fmtX, fmtPct } from '../lib/format';
-import { Spark } from '../components/Spark';
 
 interface Props {
   data: Dataset;
   setRoute: (r: Route) => void;
-  openDetail: (r: L2Row) => void;
+  // openDetail kept on the signature for future use (e.g., clicking a tile)
+  openDetail?: (r: L2Row) => void;
 }
 
-export function OverviewPage({ data, setRoute, openDetail }: Props) {
+export function OverviewPage({ data, setRoute }: Props) {
   const adi = data.adi;
   const sum = data.tierSummary;
   const C = data.cohorts;
@@ -23,9 +23,6 @@ export function OverviewPage({ data, setRoute, openDetail }: Props) {
     .map((r) => ({ ...r, _mt: (r.chain_mcap as number) / r.tvl }))
     .sort((a, b) => Math.abs(a._mt - adiMT) - Math.abs(b._mt - adiMT))
     .slice(0, 3);
-
-  // Historical M/T sparkline for ADI to fill bottom space.
-  const adiHistory: number[] = (data.history?.adi || []).filter((v): v is number => v != null);
 
   return (
     <div className="term-grid">
@@ -131,51 +128,7 @@ export function OverviewPage({ data, setRoute, openDetail }: Props) {
         </div>
       </div>
 
-      {/* Row 3: ADI 90d Mcap/TVL trend mini-chart (fills the dead space below) */}
-      {adiHistory.length > 0 && (
-        <div
-          className="widget w-6"
-          title="ADI's Mcap/TVL ratio over the last 90 days (DefiLlama view, since the on-chain reframe is recent). Trending up = price drifting down on flat indexed TVL."
-        >
-          <div className="widget-head">
-            <span className="widget-title">ADI Mcap/TVL · 90d (DefiLlama view)</span>
-            <span className="widget-meta">{adiHistory.length}d</span>
-          </div>
-          <div className="widget-body" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <Spark data={adiHistory} width={400} height={80} />
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase' }}>last value</div>
-              <div style={{ color: 'var(--accent-red)', fontWeight: 700, fontSize: 18 }}>{fmtX(adiHistory[adiHistory.length - 1], 0)}</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 4 }}>
-                from {fmtX(adiHistory[0], 0)} 90d ago
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div
-        className="widget w-6"
-        title="DDSC stablecoin supply over time would normally appear here. The contract is verified live from rpc.adifoundation.ai. Historical series will populate as scheduled refreshes accumulate."
-      >
-        <div className="widget-head">
-          <span className="widget-title">DDSC on-chain proof</span>
-          <span className="widget-meta">{adi.ddsc_rpc.replace('https://', '')}</span>
-        </div>
-        <div className="widget-body">
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1.7, color: 'var(--text-muted)' }}>
-            <div><span style={{ color: 'var(--text-muted)' }}>Contract</span> <span style={{ color: 'var(--foreground)' }}>{adi.ddsc_contract.slice(0, 12)}…{adi.ddsc_contract.slice(-6)}</span></div>
-            <div><span style={{ color: 'var(--text-muted)' }}>Peg</span> <span style={{ color: 'var(--foreground)' }}>1 DDSC = 1 AED · {adi.ddsc_aed_per_usd} AED/USD</span></div>
-            <div><span style={{ color: 'var(--text-muted)' }}>Reserves</span> <span style={{ color: 'var(--foreground)' }}>{adi.ddsc_reserve_bank}</span></div>
-            <div><span style={{ color: 'var(--text-muted)' }}>Supply (AED)</span> <span style={{ color: 'var(--accent-orange)', fontWeight: 700 }}>{Number(adi.ddsc_tvl_aed).toLocaleString()} AED</span></div>
-            <div><span style={{ color: 'var(--text-muted)' }}>Supply (USD)</span> <span style={{ color: 'var(--accent-orange)', fontWeight: 700 }}>{fmtUSD(adi.ddsc_tvl_usd)}</span></div>
-            <div><span style={{ color: 'var(--text-muted)' }}>Method</span> <span style={{ color: 'var(--foreground)' }}>eth_call totalSupply()</span></div>
-            <div><span style={{ color: 'var(--text-muted)' }}>Last fetched</span> <span style={{ color: 'var(--foreground)' }}>{adi.ddsc_fetched_at}</span></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Row 4: Nav cards to other pages */}
+      {/* Row 3: Nav cards to other pages */}
       <div className="w-12">
         <div className="nav-cards">
           <div className="nav-card" onClick={() => setRoute('table')}>
