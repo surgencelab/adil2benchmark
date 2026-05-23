@@ -421,7 +421,7 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 4px;
-      padding: 14px 16px;
+      padding: 10px 14px;
       position: relative;
       transition: border-color .15s ease, transform .15s ease;
     }
@@ -438,7 +438,7 @@
       color: var(--text-muted); margin-bottom: 8px; font-weight: 600;
     }
     .counter-value {
-      font-size: 28px; font-weight: 700; line-height: 1.1;
+      font-size: 22px; font-weight: 700; line-height: 1.1;
       font-variant-numeric: tabular-nums;
       color: var(--foreground);
     }
@@ -453,12 +453,12 @@
        ════════════════════════════════════════════════════════════════ */
     .data-table {
       width: 100%; border-collapse: collapse;
-      font-size: 12.5px; font-family: var(--font-mono);
+      font-size: 11.5px; font-family: var(--font-mono);
     }
     .data-table thead th {
-      text-align: left; font-size: 10px; text-transform: uppercase;
+      text-align: left; font-size: 9.5px; text-transform: uppercase;
       letter-spacing: 0.1em; color: var(--text-muted);
-      padding: 10px 14px;
+      padding: 7px 10px;
       border-bottom: 1px solid var(--border-bright);
       font-weight: 600; white-space: nowrap;
       background: var(--panel-header);
@@ -466,9 +466,10 @@
     }
     .data-table thead th.right { text-align: right; }
     .data-table tbody td {
-      padding: 11px 14px;
+      padding: 6px 10px;
       border-bottom: 1px solid var(--border);
       font-variant-numeric: tabular-nums;
+      white-space: nowrap;
     }
     .data-table tbody td.right { text-align: right; }
     .data-table tbody tr:last-child td { border-bottom: none; }
@@ -933,13 +934,7 @@
         </div>
       );
 
-      const note = (
-        <div className="read-note">
-          <strong>Read:</strong> Each dot is one L2; X-axis is TVL, Y-axis is token market cap (both log scale).
-          Healthy L2s cluster near the dashed <strong>Mcap = TVL</strong> reference line.
-          ADI (<span className="danger-text">red</span>) sits ~2 decades above it: <strong>{fmtUSD(adi.token_mcap)} Mcap</strong> on <strong>{fmtUSD(adi.tvl)} TVL</strong>.
-        </div>
-      );
+      const note = null;
 
       return (
         <ChartWrapper screenshotName="adi-mcap-vs-tvl-scatter" legend={legend} note={note}>
@@ -1237,15 +1232,7 @@
       );
 
       const adiOnChain = (D.adi && D.adi.mcaptvl_with_ddsc) ? D.adi.mcaptvl_with_ddsc : null;
-      const note = (
-        <div className="read-note">
-          <strong>Read:</strong> Healthy L2 cohorts sit in the <strong>0.3–10×</strong> band depending on tier.
-          The red line shows the <strong>DefiLlama-visible view</strong> of ADI's Mcap/TVL at <span className="danger-text">{fmtX(lastAdi, 0)}</span>. That figure misses
-          {' '}<strong>{D.adi ? fmtUSD(D.adi.ddsc_tvl_usd) : '$33.2M'}</strong> of DDSC stablecoin (peg 1 AED, FAB-custodied, verified via RPC).
-          Counting DDSC, the on-chain Mcap/TVL is <strong>{adiOnChain ? fmtX(adiOnChain, 2) : '11.88×'}</strong>: growth-priced and above the L2 median, but well within the defensible range for early L2s.
-          The chart shows the audit-visible gap, not the on-chain reality.
-        </div>
-      );
+      const note = null;
 
       return (
         <ChartWrapper
@@ -1261,7 +1248,6 @@
     /* ─── App shell ─────────────────────────────────────── */
     const NAV = [
       { id: 'overview',     label: 'Overview' },
-      { id: 'tiers',        label: 'Tier Benchmarks' },
       { id: 'distribution', label: 'Distribution' },
       { id: 'scatter',      label: 'Mcap vs TVL' },
       { id: 'table',        label: 'Full L2 Table' },
@@ -1329,18 +1315,16 @@
 
               {active === 'overview' && (
                 <>
-                  <div className="page-header">
+                  <div className="page-header" style={{ marginBottom: 12 }}>
                     <div className="page-eyebrow">Surgence Labs / ADI Foundation Audit</div>
-                    <h1 className="page-title">L2 Benchmark · small / mid / large</h1>
-                    <p className="page-sub">Where ADI sits on TVL, token market cap, DEX volume, and the ratios that derive from them, measured against the 30 most active L2/rollup chains tracked by DefiLlama.</p>
+                    <h1 className="page-title" style={{ fontSize: 22 }}>L2 Benchmark</h1>
                   </div>
 
-                  <div className="section">
+                  <div className="section" style={{ marginBottom: 14 }}>
                     <div className="meta-strip">
                       <span className="kv"><span className="k">Audit ref</span><span className="v"><code className="inline">$610K vol · $418M MC · 0.15% turnover</code></span></span>
-                      <span className="kv"><span className="k">Concerns</span><span className="v">#1 · #4 · #7</span></span>
-                      <span className="kv"><span className="k">Universe</span><span className="v">30 active L2s</span></span>
-                      <span className="kv"><span className="k">Source</span><span className="v">DefiLlama + ADI RPC</span></span>
+                      <span className="kv"><span className="k">Universe</span><span className="v">{D.rows.length} L2s</span></span>
+                      <span className="kv"><span className="k">Source</span><span className="v">DefiLlama + ADI RPC + Growthepie + CoinGecko</span></span>
                       <span className="kv"><span className="k">Pulled</span><span className="v">{D.asOf}</span></span>
                     </div>
                   </div>
@@ -1393,35 +1377,14 @@
                     </TuiPanel>
                   </div>
 
-                  <Divider label="Institutional proof point" />
+                  <Divider label="L2 tier medians · all 30 active L2s" />
                   <div className="section">
-                    <div className="proof">
-                      <span className="proof-label">{`>`} VERIFIED IN-MARKET</span>
-                      <b>IHC executed a $30M (110M AED) DDSC transaction on ADI Chain</b>, in partnership with <b>First Abu Dhabi Bank</b> and <b>Sirius International Holding</b>. International Holding Company (Abu Dhabi-based, valued at $233B) is described in the announcement as a <em>founding participant in the DDSC ecosystem</em>. The transaction is reported as the first major corporate-scale transfer of a UAE Central Bank-regulated digital currency.
-                      <blockquote>
-                        "The 110 million AED ($30 million) DDSC transaction on ADI Chain marks the start of a new era; institutional digital assets are not just feasible, but now scalable and efficient at large volumes."
-                        <cite>Syed Basar Shueb, CEO, International Holding Company</cite>
-                      </blockquote>
-                      <div className="partners">
-                        <span className="partner">IHC · $233B</span>
-                        <span className="partner">FAB · UAE's largest bank</span>
-                        <span className="partner">Sirius Intl Holding</span>
-                        <span className="partner">CBUAE regulated</span>
-                      </div>
-                    </div>
+                    <TierBenchmarks summary={sum} />
                   </div>
 
-                  <Divider label="Bottom line" />
+                  <Divider label="ADI vs L2 tier benchmarks" />
                   <div className="section">
-                    <div className="verdict">
-                      <span className="verdict-label">{`>`} ANALYST READ</span>
-                      DDSC is pegged 1:1 to <b>AED</b> (not USD), reserves custodied by First Abu Dhabi Bank. At the fixed {adi.ddsc_aed_per_usd} AED/USD peg, the <b>{adi.ddsc_tvl_aed.toLocaleString()} AED</b> supply converts to <b>{fmtUSD(adi.ddsc_tvl_usd)}</b>. Counted alongside the {fmtUSD(adi.tvl_defillama_visible)} of Uniswap LP liquidity, ADI's total on-chain TVL is <b>{fmtUSD(adi.tvl_with_ddsc)}</b>, giving a Mcap/TVL ratio of <b>{fmtX(adi.mcaptvl_with_ddsc, 2)}</b>. That's growth-priced but no longer an outlier: above Mantle ({fmtX(5.83)}) and Manta ({fmtX(5.27)}), below World Chain ({fmtX(24.39)}). The audit's widely-cited <b>{fmtX(adi.mcaptvl, 0)}</b> headline is a measurement gap, DefiLlama doesn't yet index DDSC. With IHC's <b>$30M institutional transaction</b> now executed on-chain, the framing shifts from "token economics vs usage" toward <em>data-layer integrity</em> (Concern #7) plus the still-real liquidity gap (0.15% daily turnover).
-                    </div>
-                  </div>
-
-                  <Divider label="ADI vs tier medians" />
-                  <div className="section">
-                    <TuiPanel title="Targets vs ADI today" badge="Medians across each tier" flush>
+                    <TuiPanel title="Side-by-side comparison" badge="DefiLlama view in red, on-chain view in green" flush>
                       <table className="data-table">
                         <thead>
                           <tr>
@@ -1497,170 +1460,130 @@
                 </>
               )}
 
-              {active === 'tiers' && (
-                <>
-                  <div className="page-header">
-                    <div className="page-eyebrow">Tier Benchmarks</div>
-                    <h1 className="page-title">Median values across each L2 tier</h1>
-                    <p className="page-sub">Auto-bucketed by TVL rank, Large = top 5, Mid = 6–15, Small = 16–30. These are the medians ADI's metrics should be measured against.</p>
-                  </div>
-
-                  <div className="section">
-                    <TierBenchmarks summary={sum} />
-                  </div>
-
-                  <Divider label="Reading guide" />
-                  <div className="section">
-                    <TuiPanel title="How to read these benchmarks" padLg>
-                      <ul className="reading-list">
-                        <li><span className="lead">TVL</span><span><b>Real capital bridged + deployed</b> on the chain. Spans 3 orders of magnitude across tiers ($7M small → $720M large).</span></li>
-                        <li><span className="lead">MCAP</span><span><b>Float × price of the native token.</b> Should scale roughly with TVL, a chain with $7M TVL but $400M Mcap is the anomaly, not the rule.</span></li>
-                        <li><span className="lead">DEX</span><span><b>24h DEX volume on the chain.</b> Below $10K/day in a $20M+ chain is a dead-chain signal.</span></li>
-                        <li><span className="lead">M/T</span><span><b>Mcap / TVL ratio.</b> How richly the token is priced relative to actual usage. Healthy range: 0.3–5×. ADI sits at <b>{fmtX(adi.mcaptvl_with_ddsc, 2)}</b> with on-chain DDSC counted, <b>{fmtX(adi.mcaptvl, 0)}</b> in the DefiLlama-only view.</span></li>
-                        <li><span className="lead">V/T</span><span><b>Vol / TVL %.</b> Capital efficiency proxy. Healthy mid/large L2s sit 1–15% daily.</span></li>
-                      </ul>
-                    </TuiPanel>
-                  </div>
-                </>
-              )}
 
               {active === 'distribution' && (() => {
                 const C = D.cohorts || {};
                 const fmt = v => v == null ? '-' : fmtX(v, 2);
                 const fmtN = v => v == null ? '-' : Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
+                const airdropRows    = D.rows.filter(r => r.airdrop_distributed);
+                const nonAirdropRows = D.rows.filter(r => r.has_token && !r.airdrop_distributed);
+                const noTokenRows    = D.rows.filter(r => !r.has_token);
+                // sort each by mcap (or tvl if no mcap)
+                const sortBy = (rows, key) => [...rows].sort((a,b) => (b[key]||0) - (a[key]||0));
+
+                const ProtoRow = ({ r, highlight=false }) => {
+                  const mcap = r.chain_mcap;
+                  const fdv = r.fdv_usd;
+                  const mt = (mcap && r.tvl) ? mcap/r.tvl : null;
+                  const tip = [
+                    r.distribution_model && `dist: ${r.distribution_model}`,
+                    r.airdrop_pct_of_supply ? `airdrop: ${r.airdrop_pct_of_supply}% of supply` : null,
+                    r.max_supply ? `max supply: ${(r.max_supply/1e6).toFixed(0)}M` : null,
+                    r.tx_per_day ? `tx/day: ${Math.round(r.tx_per_day).toLocaleString()}` : null,
+                    r.active_wallets_per_day ? `daa: ${Math.round(r.active_wallets_per_day).toLocaleString()}` : null,
+                    r.protocols ? `protocols: ${r.protocols}` : null,
+                  ].filter(Boolean).join(' · ');
+                  return (
+                    <tr title={tip} className={highlight ? 'row-adi' : ''}>
+                      <td>{r.name}</td>
+                      <td className="muted">{r.symbol || '-'}</td>
+                      <td className="right">{fmtUSD(r.tvl)}</td>
+                      <td className="right">{fmtUSD(mcap)}</td>
+                      <td className="right">{fmtUSD(fdv)}</td>
+                      <td className="right">{mt == null ? '-' : <span className={mt > 50 ? 'danger' : ''}>{fmtX(mt)}</span>}</td>
+                    </tr>
+                  );
+                };
+
+                const AdiProtoRow = () => {
+                  const tip = `dist: private_only · IHC + FAB + Sirius founding partners · DDSC peg: 1 AED, FAB-custodied · max supply: 1000M · ~10% circulating`;
+                  return (
+                    <tr title={tip} className="row-adi">
+                      <td>ADI Chain</td>
+                      <td className="muted">ADI</td>
+                      <td className="right">{fmtUSD(adi.tvl_with_ddsc)}</td>
+                      <td className="right">{fmtUSD(adi.token_mcap)}</td>
+                      <td className="right">{fmtUSD(adi.fdv_usd)}</td>
+                      <td className="right">{fmtX(adi.mcaptvl_with_ddsc, 2)}</td>
+                    </tr>
+                  );
+                };
+
                 return (
                   <>
-                    <div className="page-header">
+                    <div className="page-header" style={{ marginBottom: 12 }}>
                       <div className="page-eyebrow">Distribution Model</div>
-                      <h1 className="page-title">Airdrop vs non-airdrop L2s</h1>
-                      <p className="page-sub">L2s with public token distribution (airdrop) tend to have wider float and lower Mcap/TVL ratios. L2s without one tend to be priced ahead of usage. ADI sits in the non-airdrop cohort with restricted distribution.</p>
+                      <h1 className="page-title" style={{ fontSize: 22 }}>Airdrop vs non-airdrop L2s</h1>
                     </div>
 
-                    <div className="section grid-3">
-                      <div className="tui-panel">
-                        <div className="tui-panel-header">
-                          <span className="tui-panel-title">Airdrop L2s</span>
-                          <span className="tui-panel-badge">n = {C.Airdrop?.n ?? '-'}</span>
-                        </div>
-                        <div className="tui-panel-body">
-                          <div className="tier-rows">
-                            <div className="tier-row"><span className="k">Mcap / TVL median</span><span className="v">{fmt(C.Airdrop?.mcap_tvl_med)}</span></div>
-                            <div className="tier-row"><span className="k">FDV / TVL median</span><span className="v">{fmt(C.Airdrop?.fdv_tvl_med)}</span></div>
-                            <div className="tier-row"><span className="k">TVL median</span><span className="v">{fmtUSD(C.Airdrop?.tvl_med)}</span></div>
-                            <div className="tier-row"><span className="k">Mcap median</span><span className="v">{fmtUSD(C.Airdrop?.mcap_med)}</span></div>
-                            <div className="tier-row"><span className="k">FDV median</span><span className="v">{fmtUSD(C.Airdrop?.fdv_med)}</span></div>
-                            <div className="tier-row"><span className="k">Tx / day median</span><span className="v">{fmtN(C.Airdrop?.tx_per_day_med)}</span></div>
-                            <div className="tier-row"><span className="k">Active wallets / day</span><span className="v">{fmtN(C.Airdrop?.daa_med)}</span></div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="tui-panel" style={{ borderColor: 'var(--accent-red)' }}>
-                        <div className="tui-panel-header">
-                          <span className="tui-panel-title" style={{ color: 'var(--accent-red)' }}>Non-airdrop L2s (have token)</span>
-                          <span className="tui-panel-badge">n = {C.NonAirdrop?.n ?? '-'}</span>
-                        </div>
-                        <div className="tui-panel-body">
-                          <div className="tier-rows">
-                            <div className="tier-row"><span className="k">Mcap / TVL median</span><span className="v" style={{ color: 'var(--accent-red)' }}>{fmt(C.NonAirdrop?.mcap_tvl_med)}</span></div>
-                            <div className="tier-row"><span className="k">FDV / TVL median</span><span className="v">{fmt(C.NonAirdrop?.fdv_tvl_med)}</span></div>
-                            <div className="tier-row"><span className="k">TVL median</span><span className="v">{fmtUSD(C.NonAirdrop?.tvl_med)}</span></div>
-                            <div className="tier-row"><span className="k">Mcap median</span><span className="v">{fmtUSD(C.NonAirdrop?.mcap_med)}</span></div>
-                            <div className="tier-row"><span className="k">FDV median</span><span className="v">{fmtUSD(C.NonAirdrop?.fdv_med)}</span></div>
-                            <div className="tier-row"><span className="k">Tx / day median</span><span className="v">{fmtN(C.NonAirdrop?.tx_per_day_med)}</span></div>
-                            <div className="tier-row"><span className="k">Active wallets / day</span><span className="v">{fmtN(C.NonAirdrop?.daa_med)}</span></div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="tui-panel">
-                        <div className="tui-panel-header">
-                          <span className="tui-panel-title">No-token L2s</span>
-                          <span className="tui-panel-badge">n = {C.NoToken?.n ?? '-'}</span>
-                        </div>
-                        <div className="tui-panel-body">
-                          <div className="tier-rows">
-                            <div className="tier-row"><span className="k">Mcap / TVL median</span><span className="v muted">N/A</span></div>
-                            <div className="tier-row"><span className="k">FDV / TVL median</span><span className="v muted">N/A</span></div>
-                            <div className="tier-row"><span className="k">TVL median</span><span className="v">{fmtUSD(C.NoToken?.tvl_med)}</span></div>
-                            <div className="tier-row"><span className="k">Mcap median</span><span className="v muted">no token</span></div>
-                            <div className="tier-row"><span className="k">FDV median</span><span className="v muted">no token</span></div>
-                            <div className="tier-row"><span className="k">Tx / day median</span><span className="v">{fmtN(C.NoToken?.tx_per_day_med)}</span></div>
-                            <div className="tier-row"><span className="k">Active wallets / day</span><span className="v">{fmtN(C.NoToken?.daa_med)}</span></div>
-                          </div>
-                        </div>
+                    <div className="section" style={{ marginBottom: 14 }}>
+                      <div className="meta-strip">
+                        <span className="kv"><span className="k">Airdrop L2s</span><span className="v">{airdropRows.length} chains · Mcap/TVL med {fmt(C.Airdrop?.mcap_tvl_med)} · FDV med {fmtUSD(C.Airdrop?.fdv_med)}</span></span>
+                        <span className="kv" style={{ borderColor: 'var(--accent-red)' }}><span className="k">Non-airdrop</span><span className="v" style={{ color: 'var(--accent-red)' }}>{nonAirdropRows.length} chains · Mcap/TVL med {fmt(C.NonAirdrop?.mcap_tvl_med)} · FDV med {fmtUSD(C.NonAirdrop?.fdv_med)}</span></span>
+                        <span className="kv"><span className="k">No-token</span><span className="v">{noTokenRows.length} chains · TVL med {fmtUSD(C.NoToken?.tvl_med)}</span></span>
                       </div>
                     </div>
 
-                    <Divider label="Where ADI sits in this lens" />
-                    <div className="section">
-                      <TuiPanel title="ADI vs cohort medians" badge="Non-airdrop is the right peer set" flush>
-                        <table className="data-table">
-                          <thead>
-                            <tr>
-                              <th>Metric</th>
-                              <th className="right">ADI today</th>
-                              <th className="right">Non-airdrop median</th>
-                              <th className="right">Airdrop median</th>
-                              <th className="right">No-token median</th>
-                              <th className="right">Read</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td>Mcap / TVL (on-chain, incl. DDSC)</td>
-                              <td className="right">{fmtX(adi.mcaptvl_with_ddsc, 2)}</td>
-                              <td className="right">{fmt(C.NonAirdrop?.mcap_tvl_med)}</td>
-                              <td className="right">{fmt(C.Airdrop?.mcap_tvl_med)}</td>
-                              <td className="right muted">N/A</td>
-                              <td className="right">{(adi.mcaptvl_with_ddsc / (C.NonAirdrop?.mcap_tvl_med || 1)).toFixed(1)}× the non-airdrop median</td>
-                            </tr>
-                            <tr>
-                              <td>FDV (max_supply × price)</td>
-                              <td className="right">{fmtUSD(adi.fdv_usd)}</td>
-                              <td className="right">{fmtUSD(C.NonAirdrop?.fdv_med)}</td>
-                              <td className="right">{fmtUSD(C.Airdrop?.fdv_med)}</td>
-                              <td className="right muted">N/A</td>
-                              <td className="right">{adi.fdv_usd && C.NonAirdrop?.fdv_med ? `${(adi.fdv_usd / C.NonAirdrop.fdv_med).toFixed(1)}× the non-airdrop median` : '-'}</td>
-                            </tr>
-                            <tr>
-                              <td>FDV / TVL ratio</td>
-                              <td className="right">{adi.fdv_usd && adi.tvl_with_ddsc ? fmtX(adi.fdv_usd / adi.tvl_with_ddsc, 1) : '-'}</td>
-                              <td className="right">{fmt(C.NonAirdrop?.fdv_tvl_med)}</td>
-                              <td className="right">{fmt(C.Airdrop?.fdv_tvl_med)}</td>
-                              <td className="right muted">N/A</td>
-                              <td className="right">Both cohorts well above 1×; pre-product token economics is normal</td>
-                            </tr>
-                            <tr>
-                              <td>Tx / day</td>
-                              <td className="right muted">awaiting Growthepie</td>
-                              <td className="right">{fmtN(C.NonAirdrop?.tx_per_day_med)}</td>
-                              <td className="right">{fmtN(C.Airdrop?.tx_per_day_med)}</td>
-                              <td className="right">{fmtN(C.NoToken?.tx_per_day_med)}</td>
-                              <td className="right muted">ADI Chain not yet on Growthepie</td>
-                            </tr>
-                            <tr>
-                              <td>Active wallets / day</td>
-                              <td className="right muted">awaiting Growthepie</td>
-                              <td className="right">{fmtN(C.NonAirdrop?.daa_med)}</td>
-                              <td className="right">{fmtN(C.Airdrop?.daa_med)}</td>
-                              <td className="right">{fmtN(C.NoToken?.daa_med)}</td>
-                              <td className="right muted">Submit ADI to Growthepie to populate</td>
-                            </tr>
-                          </tbody>
-                        </table>
+                    <div className="section grid-3" style={{ alignItems: 'start' }}>
+                      <TuiPanel title="Airdrop L2s" badge={`${airdropRows.length} chains · hover for detail`} flush>
+                        <div style={{ maxHeight: 540, overflow: 'auto' }}>
+                          <table className="data-table">
+                            <thead>
+                              <tr>
+                                <th>Chain</th>
+                                <th>Token</th>
+                                <th className="right">TVL</th>
+                                <th className="right">Mcap</th>
+                                <th className="right">FDV</th>
+                                <th className="right">M/T</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {sortBy(airdropRows, 'chain_mcap').map(r => <ProtoRow key={r.name} r={r} />)}
+                            </tbody>
+                          </table>
+                        </div>
                       </TuiPanel>
-                    </div>
 
-                    <Divider label="What this lens reveals" />
-                    <div className="section">
-                      <TuiPanel title="Read" padLg>
-                        <ul className="reading-list">
-                          <li><span className="lead">1</span><span><b>Non-airdrop L2s have ~4× higher Mcap/TVL than airdrop L2s.</b> Tight float pushes the ratio up across the cohort. Non-airdrop median is <b>{fmt(C.NonAirdrop?.mcap_tvl_med)}</b> vs airdrop median <b>{fmt(C.Airdrop?.mcap_tvl_med)}</b>. ADI's <b>{fmtX(adi.mcaptvl_with_ddsc, 2)}</b> is ~{(adi.mcaptvl_with_ddsc / (C.NonAirdrop?.mcap_tvl_med || 1)).toFixed(1)}× the non-airdrop median, not the 137× the all-cohort framing implies.</span></li>
-                          <li><span className="lead">2</span><span><b>The right peer set for ADI is non-airdrop L2s with restricted distribution.</b> World Chain ({fmtX(24.39)}), Mantle ({fmtX(5.83)}), Sophon ({fmtX(3.46)}) and ADI ({fmtX(adi.mcaptvl_with_ddsc, 2)}) are the apples-to-apples comparison. Comparing ADI to Arbitrum (0.30×) or Optimism (0.42×) is comparing pre-distribution to post-distribution chains, not pre-launch to post-launch.</span></li>
-                          <li><span className="lead">3</span><span><b>FDV gap is real and structural.</b> ADI's FDV is <b>{fmtUSD(adi.fdv_usd)}</b> against a non-airdrop median of <b>{fmtUSD(C.NonAirdrop?.fdv_med)}</b>. With ~10% circulating, the unlock overhang is the audit's enduring concern, independent of TVL growth.</span></li>
-                          <li><span className="lead">4</span><span><b>Activity data is blocked until ADI Chain is on Growthepie.</b> Their submission flow is open; one PR adds ADI to the chain list and unlocks tx/day + active-wallets benchmarking in this dashboard automatically.</span></li>
-                        </ul>
+                      <TuiPanel title="Non-airdrop (have token)" badge={`${nonAirdropRows.length + 1} chains · ADI peer set`} flush>
+                        <div style={{ maxHeight: 540, overflow: 'auto' }}>
+                          <table className="data-table">
+                            <thead>
+                              <tr>
+                                <th>Chain</th>
+                                <th>Token</th>
+                                <th className="right">TVL</th>
+                                <th className="right">Mcap</th>
+                                <th className="right">FDV</th>
+                                <th className="right">M/T</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <AdiProtoRow />
+                              {sortBy(nonAirdropRows, 'chain_mcap').map(r => <ProtoRow key={r.name} r={r} />)}
+                            </tbody>
+                          </table>
+                        </div>
+                      </TuiPanel>
+
+                      <TuiPanel title="No-token L2s" badge={`${noTokenRows.length} chains`} flush>
+                        <div style={{ maxHeight: 540, overflow: 'auto' }}>
+                          <table className="data-table">
+                            <thead>
+                              <tr>
+                                <th>Chain</th>
+                                <th>Token</th>
+                                <th className="right">TVL</th>
+                                <th className="right">Mcap</th>
+                                <th className="right">FDV</th>
+                                <th className="right">M/T</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {sortBy(noTokenRows, 'tvl').map(r => <ProtoRow key={r.name} r={r} />)}
+                            </tbody>
+                          </table>
+                        </div>
                       </TuiPanel>
                     </div>
                   </>
@@ -1669,10 +1592,9 @@
 
               {active === 'scatter' && (
                 <>
-                  <div className="page-header">
+                  <div className="page-header" style={{ marginBottom: 12 }}>
                     <div className="page-eyebrow">Mcap vs TVL</div>
-                    <h1 className="page-title">Where ADI sits on the L2 map</h1>
-                    <p className="page-sub">Snapshot scatter + 90-day trend. ADI sits far above the healthy zone today, and the gap is widening, not closing.</p>
+                    <h1 className="page-title" style={{ fontSize: 22 }}>Position vs L2 universe</h1>
                   </div>
                   <div className="section">
                     <TuiPanel title="MCAP vs TVL · log–log" badge={`${D.rows.filter(r => r.tvl > 0 && (r.chain_mcap||0) > 0).length + 1} chains · snapshot`} flush>
@@ -1691,10 +1613,9 @@
 
               {active === 'table' && (
                 <>
-                  <div className="page-header">
+                  <div className="page-header" style={{ marginBottom: 12 }}>
                     <div className="page-eyebrow">Full L2 Table</div>
-                    <h1 className="page-title">{D.rows.length} chains · all L2/rollups DefiLlama tracks</h1>
-                    <p className="page-sub">ADI is fixed at the top of the table for direct row-by-row comparison. Anomalous values (Mcap/TVL &gt; 50×, Vol/TVL = 0%) are flagged in red.</p>
+                    <h1 className="page-title" style={{ fontSize: 22 }}>{D.rows.length} chains · DefiLlama + Growthepie + CoinGecko</h1>
                   </div>
                   <div className="section">
                     <TuiPanel title="L2 universe" badge={`${D.rows.length + 1} rows · sorted by tier · medians via DefiLlama`} flush>
