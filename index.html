@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ADI Chain · L2 Benchmark Terminal</title>
+  <title>ADI Chain · L2 Benchmark</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1233,15 +1233,55 @@
     );
 
     /* ─── Mcap vs TVL scatter, wrapped in ChartWrapper ───── */
-    const ScatterMcapVsTvl = ({ rows, adi }) => {
-      const W = 960, H = 380, P = { l: 56, r: 24, t: 18, b: 36 };
+    const ScatterMcapVsTvl = ({ rows, adi, openDetail }) => {
+      const [hover, setHover] = React.useState(null);
+      const W = 960, H = 440, P = { l: 60, r: 28, t: 22, b: 40 };
       const inner = { w: W - P.l - P.r, h: H - P.t - P.b };
 
-      const pts = rows.filter(r => r.tvl > 0 && (r.chain_mcap||0) > 0)
-                      .map(r => ({ name: r.name, tier: r.tier, x: r.tvl, y: r.chain_mcap, sym: r.symbol }));
-      pts.push({ name: 'ADI', tier: 'ADI', x: adi.tvl, y: adi.token_mcap, sym: 'ADI' });
+      // Build point set: every L2 with both Mcap and TVL > 0.
+      // ADI now uses on-chain TVL (incl. DDSC) for consistency with the rest
+      // of the dashboard. Audit-view ($2M Uniswap-only) is shown as a ghost
+      // dot.
+      const distColor = {
+        airdrop:      'var(--accent-green)',
+        no_token:     'var(--text-muted)',  // (won't appear, no Mcap)
+        token_swap:   'var(--accent-blue)',
+        fair_launch:  'var(--accent-cyan)',
+        private_only: 'var(--accent-orange)',
+      };
 
-      const xs = pts.map(p => Math.log10(p.x));
+      const pts = rows.filter(r => r.tvl > 0 && (r.chain_mcap||0) > 0).map(r => ({
+        row: r,
+        name: r.name,
+        sym: r.symbol,
+        x: r.tvl,
+        y: r.chain_mcap,
+        mt: r.chain_mcap / r.tvl,
+        dist: r.distribution_model,
+        color: distColor[r.distribution_model] || 'var(--text-muted)',
+      }));
+      // ADI: on-chain truth point
+      pts.push({
+        row: { ...adi, name: 'ADI Chain', symbol: 'ADI' },
+        name: 'ADI Chain', sym: 'ADI',
+        x: adi.tvl_with_ddsc, y: adi.token_mcap,
+        mt: adi.mcaptvl_with_ddsc,
+        dist: 'private_only',
+        color: 'var(--accent-red)',
+        adi: true,
+      });
+      // ADI: DefiLlama-view ghost point ($2M Uniswap LP only)
+      const adiGhost = {
+        row: { ...adi, name: 'ADI Chain (DefiLlama view)', symbol: 'ADI' },
+        name: 'ADI (DefiLlama view)', sym: '',
+        x: adi.tvl_defillama_visible, y: adi.token_mcap,
+        mt: adi.mcaptvl,
+        dist: 'private_only',
+        color: 'var(--accent-red)',
+        ghost: true,
+      };
+
+      const xs = pts.map(p => Math.log10(p.x)).concat([Math.log10(adiGhost.x)]);
       const ys = pts.map(p => Math.log10(p.y));
       const xMin = Math.floor(Math.min(...xs));
       const xMax = Math.ceil(Math.max(...xs));
@@ -1250,17 +1290,42 @@
       const sx = v => P.l + (Math.log10(v) - xMin) / (xMax - xMin) * inner.w;
       const sy = v => P.t + inner.h - (Math.log10(v) - yMin) / (yMax - yMin) * inner.h;
 
-      const tierColor = {
-        Large: 'var(--accent-green)', Mid: 'var(--accent-yellow)',
-        Small: 'var(--accent-blue)', Micro: 'var(--text-muted)', ADI: 'var(--accent-red)'
+      // Size scale: radius proportional to log(Mcap), clamped 4-12
+      const mcapLogs = pts.map(p => Math.log10(p.y));
+      const mcMin = Math.min(...mcapLogs), mcMax = Math.max(...mcapLogs);
+      const radius = (mcap, isAdi) => {
+        if (isAdi) return 9;
+        const t = (Math.log10(mcap) - mcMin) / (mcMax - mcMin || 1);
+        return 4 + t * 7;
       };
+
       const xTicks = []; for (let i = xMin; i <= xMax; i++) xTicks.push(i);
       const yTicks = []; for (let i = yMin; i <= yMax; i++) yTicks.push(i);
       const tickFmt = t => t >= 9 ? `$${10**(t-9)}B` : t >= 6 ? `$${10**(t-6)}M` : `$${10**(t-3)}K`;
 
+      // Build healthy band polygon (Mcap/TVL between 0.3x and 5x)
+      const bandPts = [
+        { x: 10**xMin, y: 10**xMin * 0.3 },
+        { x: 10**xMax, y: 10**xMax * 0.3 },
+        { x: 10**xMax, y: 10**xMax * 5 },
+        { x: 10**xMin, y: 10**xMin * 5 },
+      ];
+      const bandPath = bandPts.map((p, i) => `${i===0?'M':'L'} ${sx(p.x).toFixed(1)} ${sy(Math.max(p.y, 10**yMin)).toFixed(1)}`).join(' ') + ' Z';
+
+      // Always label these chains for orientation
+      const ALWAYS_LABEL = new Set(['Base','Arbitrum','OP Mainnet','Mantle','World Chain','ZKsync Era','Linea','MegaETH','IOTA EVM','Manta','Sophon','Scroll','Blast','Movement']);
+
       const svg = (
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block', width: '100%', height: 'auto' }}>
-          {/* Gridlines, recharts CartesianGrid 3,3 */}
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
+             style={{ display: 'block', width: '100%', height: 'auto', cursor: hover ? 'pointer' : 'default' }}>
+          {/* Healthy band */}
+          <path d={bandPath} fill="rgba(46,204,113,0.07)" stroke="rgba(46,204,113,0.18)" strokeDasharray="2 4" />
+          <text x={sx(10**(xMin + (xMax-xMin)*0.05))} y={sy(10**(xMin + (xMax-xMin)*0.05) * 5) - 4}
+                fontSize="9" fill="var(--accent-green)" fontFamily="var(--font-mono)" fontStyle="italic" opacity="0.7">
+            healthy band (Mcap/TVL 0.3-5×)
+          </text>
+
+          {/* Gridlines */}
           {yTicks.map(t => (
             <line key={`gy${t}`} x1={P.l} y1={sy(10**t)} x2={P.l + inner.w} y2={sy(10**t)}
                   stroke="var(--border)" strokeDasharray="3 3" />
@@ -1269,9 +1334,11 @@
             <line key={`gx${t}`} x1={sx(10**t)} y1={P.t} x2={sx(10**t)} y2={P.t + inner.h}
                   stroke="var(--tint-soft)" strokeDasharray="3 3" />
           ))}
-          {/* Axis lines, left + bottom */}
+
+          {/* Axis lines */}
           <line x1={P.l} y1={P.t} x2={P.l} y2={P.t + inner.h} stroke="var(--border-bright)" />
           <line x1={P.l} y1={P.t + inner.h} x2={P.l + inner.w} y2={P.t + inner.h} stroke="var(--border-bright)" />
+
           {/* Y tick labels */}
           {yTicks.map(t => (
             <text key={`yl${t}`} x={P.l - 8} y={sy(10**t) + 3} fontSize="10" textAnchor="end"
@@ -1282,54 +1349,118 @@
             <text key={`xl${t}`} x={sx(10**t)} y={P.t + inner.h + 18} fontSize="10" textAnchor="middle"
                   fill="var(--text-muted)" fontFamily="var(--font-mono)">{tickFmt(t)}</text>
           ))}
+          {/* Axis titles */}
+          <text x={P.l + inner.w/2} y={H - 4} fontSize="10" textAnchor="middle"
+                fill="var(--text-muted)" fontFamily="var(--font-mono)" letterSpacing="0.1em">TVL (LOG SCALE)</text>
+          <text x={14} y={P.t + inner.h/2} fontSize="10" textAnchor="middle"
+                fill="var(--text-muted)" fontFamily="var(--font-mono)" letterSpacing="0.1em"
+                transform={`rotate(-90 14 ${P.t + inner.h/2})`}>MCAP (LOG SCALE)</text>
 
-          {/* y = x reference line (Mcap = TVL) */}
+          {/* Mcap = TVL reference */}
           <line x1={sx(10**xMin)} y1={sy(10**xMin)} x2={sx(10**xMax)} y2={sy(10**xMax)}
                 stroke="var(--tint-strong)" strokeDasharray="4 4" />
-          <text x={sx(10**(xMin + (xMax-xMin)*0.85))} y={sy(10**(xMin + (xMax-xMin)*0.85)) - 8}
+          <text x={sx(10**(xMin + (xMax-xMin)*0.88))} y={sy(10**(xMin + (xMax-xMin)*0.88)) - 6}
                 fontSize="10" fill="var(--text-muted)" textAnchor="middle" fontStyle="italic"
-                fontFamily="var(--font-mono)">MCAP = TVL</text>
+                fontFamily="var(--font-mono)">Mcap = TVL</text>
+
+          {/* ADI ghost point (DefiLlama view), drawn first so on-chain sits on top */}
+          {(() => {
+            const cx = sx(adiGhost.x), cy = sy(adiGhost.y);
+            return (
+              <g style={{ cursor: 'pointer' }}
+                 onMouseEnter={(e) => setHover({ p: adiGhost, x: cx, y: cy })}
+                 onMouseLeave={() => setHover(null)}
+                 onClick={() => openDetail && openDetail(adiGhost.row)}>
+                <circle cx={cx} cy={cy} r="7" fill="none" stroke="var(--accent-red)" strokeWidth="1.5" strokeDasharray="2 2" opacity="0.7" />
+              </g>
+            );
+          })()}
+          {/* Connecting line ADI ghost → ADI on-chain */}
+          {(() => {
+            const adiPt = pts.find(p => p.adi);
+            if (!adiPt) return null;
+            return <line x1={sx(adiGhost.x)} y1={sy(adiGhost.y)} x2={sx(adiPt.x)} y2={sy(adiPt.y)}
+                          stroke="var(--accent-red)" strokeDasharray="2 2" opacity="0.5" />;
+          })()}
 
           {/* Points */}
           {pts.map((p, i) => {
             const cx = sx(p.x), cy = sy(p.y);
-            const nearRight = cx > P.l + inner.w - 80;
-            const showLabel = p.tier === 'ADI' || ['Base','Arbitrum','OP Mainnet','Mantle','World Chain','ZKsync Era','Linea','MegaETH'].includes(p.name);
+            const r = radius(p.y, p.adi);
+            const nearRight = cx > P.l + inner.w - 90;
+            const showLabel = p.adi || ALWAYS_LABEL.has(p.name);
             return (
-              <g key={`${p.name}-${i}`}>
-                <circle cx={cx} cy={cy} r={p.tier === 'ADI' ? 7 : 4.5}
-                        fill={tierColor[p.tier]} fillOpacity={p.tier === 'ADI' ? 1 : 0.78}
-                        stroke={p.tier === 'ADI' ? 'var(--accent-red)' : 'var(--card)'} strokeWidth={p.tier === 'ADI' ? 2 : 1} />
+              <g key={`${p.name}-${i}`}
+                 style={{ cursor: 'pointer' }}
+                 onMouseEnter={() => setHover({ p, x: cx, y: cy })}
+                 onMouseLeave={() => setHover(null)}
+                 onClick={() => openDetail && openDetail(p.row)}>
+                <circle cx={cx} cy={cy} r={r}
+                        fill={p.color} fillOpacity={p.adi ? 1 : 0.72}
+                        stroke={p.adi ? 'var(--accent-red)' : 'var(--card)'}
+                        strokeWidth={p.adi ? 2 : 1} />
                 {showLabel && (
-                  <text x={nearRight ? cx - 9 : cx + 9} y={cy + 4} fontSize="10.5"
-                        fill={p.tier === 'ADI' ? 'var(--accent-red)' : 'var(--foreground)'}
-                        fontWeight={p.tier === 'ADI' ? 700 : 500}
+                  <text x={nearRight ? cx - r - 4 : cx + r + 4} y={cy + 3} fontSize="10.5"
+                        fill={p.adi ? 'var(--accent-red)' : 'var(--foreground)'}
+                        fontWeight={p.adi ? 700 : 500}
                         fontFamily="var(--font-mono)"
                         textAnchor={nearRight ? 'end' : 'start'}>{p.name}</text>
                 )}
               </g>
             );
           })}
+
+          {/* Hover tooltip */}
+          {hover && (() => {
+            const { p, x, y } = hover;
+            const labelLines = [
+              p.name,
+              `TVL ${fmtUSD(p.x)}  ·  Mcap ${fmtUSD(p.y)}`,
+              `M/T ${fmtX(p.mt, 2)}  ·  ${p.dist || '-'}${p.ghost ? '  (DefiLlama-only view)' : ''}`,
+            ];
+            const tipW = 230, tipH = 52;
+            const flipX = x > W - tipW - 10;
+            const tx = flipX ? x - tipW - 10 : x + 10;
+            const ty = Math.max(P.t + 4, y - tipH - 6);
+            return (
+              <g pointerEvents="none">
+                <rect x={tx} y={ty} width={tipW} height={tipH} rx="3"
+                      fill="var(--card)" stroke="var(--border-bright)" />
+                {labelLines.map((line, k) => (
+                  <text key={k} x={tx + 8} y={ty + 14 + k * 13}
+                        fontSize={k === 0 ? 11.5 : 10}
+                        fontWeight={k === 0 ? 700 : 500}
+                        fill={k === 0 ? 'var(--accent-orange)' : 'var(--foreground)'}
+                        fontFamily="var(--font-mono)">{line}</text>
+                ))}
+              </g>
+            );
+          })()}
         </svg>
       );
 
       const legend = (
         <div className="chart-footer">
-          <span className="legend-item"><span className="legend-sw" style={{ background: 'var(--accent-green)' }} />Large L2 (top 5)</span>
-          <span className="legend-item"><span className="legend-sw" style={{ background: 'var(--accent-yellow)' }} />Mid L2 (6–15)</span>
-          <span className="legend-item"><span className="legend-sw" style={{ background: 'var(--accent-blue)' }} />Small L2 (16–30)</span>
-          <span className="legend-item"><span className="legend-sw" style={{ background: 'var(--text-muted)' }} />Micro L2 (31+)</span>
-          <span className="legend-item"><span className="legend-sw" style={{ background: 'var(--accent-red)' }} />ADI Chain</span>
+          <span className="legend-item"><span className="legend-sw" style={{ background: 'var(--accent-green)' }} />Airdrop L2</span>
+          <span className="legend-item"><span className="legend-sw" style={{ background: 'var(--accent-blue)' }} />Token swap</span>
+          <span className="legend-item"><span className="legend-sw" style={{ background: 'var(--accent-cyan)' }} />Fair launch</span>
+          <span className="legend-item"><span className="legend-sw" style={{ background: 'var(--accent-red)' }} />ADI (on-chain)</span>
+          <span className="legend-item">
+            <svg width="14" height="10"><circle cx="7" cy="5" r="4" fill="none" stroke="var(--accent-red)" strokeWidth="1.5" strokeDasharray="2 2" /></svg>
+            ADI (DefiLlama view)
+          </span>
+          <span className="legend-item">
+            <span className="legend-sw" style={{ background: 'rgba(46,204,113,0.18)', border: '1px dashed rgba(46,204,113,0.5)' }} />
+            Healthy band 0.3-5×
+          </span>
           <span className="legend-item" style={{ marginLeft: 'auto' }}>
-            <span className="legend-sw" style={{ background: 'var(--tint-strong)' }} />Mcap = TVL reference
+            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)' }}>dot size ∝ Mcap · click for detail</span>
           </span>
         </div>
       );
 
-      const note = null;
-
       return (
-        <ChartWrapper screenshotName="adi-mcap-vs-tvl-scatter" legend={legend} note={note}>
+        <ChartWrapper screenshotName="adi-mcap-vs-tvl-scatter" legend={legend} note={null}>
           {svg}
         </ChartWrapper>
       );
@@ -1639,7 +1770,7 @@
 
     /* ─── App shell ─────────────────────────────────────── */
     const NAV = [
-      { id: 'overview', label: 'Terminal',    hotkey: '1' },
+      { id: 'overview', label: 'Overview',    hotkey: '1' },
       { id: 'scatter',  label: 'Charts',      hotkey: '2' },
       { id: 'table',    label: 'L2 Universe', hotkey: '3' },
       { id: 'report',   label: 'Report',      hotkey: '4' },
@@ -1647,7 +1778,7 @@
 
     /* ─── Command palette ────────────────────────────────── */
     const COMMANDS = [
-      { id: 'go-overview', label: 'Go: Terminal',          shortcut: '1', action: (set) => set('overview') },
+      { id: 'go-overview', label: 'Go: Overview',          shortcut: '1', action: (set) => set('overview') },
       { id: 'go-scatter',  label: 'Go: Charts',            shortcut: '2', action: (set) => set('scatter') },
       { id: 'go-table',    label: 'Go: L2 Universe table', shortcut: '3', action: (set) => set('table') },
       { id: 'go-report',   label: 'Go: Report',            shortcut: '4', action: (set) => set('report') },
@@ -2030,7 +2161,7 @@
         <>
           {/* Left sidebar nav */}
           <aside className="sidebar-nav">
-            <div className="sidebar-brand" title="ADI L2 Benchmark Terminal">DL</div>
+            <div className="sidebar-brand" title="ADI L2 Benchmark">DL</div>
             {NAV.map(n => (
               <div key={n.id}
                    className={`sidebar-item ${active === n.id ? 'active' : ''}`}
@@ -2077,7 +2208,7 @@
           <nav className="top-nav">
             <div className="top-nav-inner">
               <div className="brand-cluster">
-                <span className="brand-title">{NAV.find(n => n.id === active)?.label || 'Terminal'} · ADI L2 Benchmark</span>
+                <span className="brand-title">{NAV.find(n => n.id === active)?.label || 'Overview'} · ADI L2 Benchmark</span>
               </div>
               <div className="nav-cluster">
                 <span className="cmd-hint" onClick={() => setCmdOpen(true)} title="Open command palette (⌘K or /)">
@@ -2114,10 +2245,10 @@
                 return (
                   <div className="term-grid">
                     {/* ────────── ROW 1: ADI snapshot ────────── */}
-                    <div className="widget w-4">
+                    <div className="widget w-6" title="ADI's six headline numbers. Mcap is the public token cap (price × circulating). TVL is the dollar value bridged + minted on ADI Chain, including the $33.2M of DDSC stablecoin verified live via RPC. FDV is fully-diluted (price × max supply). Mcap/TVL and FDV/TVL are the priciness ratios. Healthy L2 range is 0.3-5×. Turnover is 24h volume / Mcap. &lt;1%/day is conventionally 'illiquid'.">
                       <div className="widget-head">
                         <span className="widget-title">ADI · key metrics</span>
-                        <span className="widget-meta">On-chain · verified</span>
+                        <span className="widget-meta">On-chain · verified · hover for explanation</span>
                       </div>
                       <div className="widget-body">
                         <div className="stat-row" style={{ marginBottom: 12 }}>
@@ -2133,10 +2264,10 @@
                       </div>
                     </div>
 
-                    <div className="widget w-4">
+                    <div className="widget w-6" title="What makes up ADI's $35.2M TVL. The Uniswap LP figure is what DefiLlama indexes today. The DDSC figure is the on-chain totalSupply() of the CBUAE-licensed DDSC stablecoin (1 DDSC = 1 AED, reserves at FAB), converted to USD at the 3.6725 peg. The audit's '$2M / 206×' headline misses the DDSC line.">
                       <div className="widget-head">
                         <span className="widget-title">TVL composition</span>
-                        <span className="widget-meta">rpc.adifoundation.ai</span>
+                        <span className="widget-meta">rpc.adifoundation.ai · hover to learn</span>
                       </div>
                       <div className="widget-body flush">
                         <table className="data-table">
@@ -2152,28 +2283,11 @@
                       </div>
                     </div>
 
-                    <div className="widget w-4">
-                      <div className="widget-head">
-                        <span className="widget-title">Distribution</span>
-                        <span className="widget-meta">{D.rows.length} L2s tagged</span>
-                      </div>
-                      <div className="widget-body">
-                        <div className="stat-row" style={{ marginBottom: 10 }}>
-                          <div className="stat"><div className="l">Airdrop</div><div className="v">{C.Airdrop?.n}</div><div className="s">med M/T {fmtX(C.Airdrop?.mcap_tvl_med,2)}</div></div>
-                          <div className="stat"><div className="l">Non-airdrop</div><div className="v down">{C.NonAirdrop?.n}</div><div className="s">med M/T {fmtX(C.NonAirdrop?.mcap_tvl_med,2)}</div></div>
-                          <div className="stat"><div className="l">No token</div><div className="v">{C.NoToken?.n}</div><div className="s">med TVL {fmtUSD(C.NoToken?.tvl_med)}</div></div>
-                        </div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                          ADI sits in the <b style={{ color: 'var(--accent-red)' }}>non-airdrop cohort</b>. Its M/T of <b style={{ color: 'var(--accent-yellow)' }}>{fmtX(adiMT,2)}</b> is {(adiMT/(C.NonAirdrop?.mcap_tvl_med||1)).toFixed(1)}× the cohort median.
-                        </div>
-                      </div>
-                    </div>
-
                     {/* ────────── ROW 2: Tier benchmarks ────────── */}
-                    <div className="widget w-12">
+                    <div className="widget w-12" title="The 30 most active L2/rollups, bucketed by TVL: Large (top 5), Mid (6-15), Small (16-30). Each row shows the median value of that tier across TVL, Mcap, 24h DEX volume, Mcap/TVL, and Vol/TVL. The 'Position of ADI' column tells you which tier ADI's Mcap/TVL most resembles. The last row pins ADI's own numbers for direct comparison.">
                       <div className="widget-head">
                         <span className="widget-title">L2 tier medians</span>
-                        <span className="widget-meta">30 active L2s · auto-bucketed by TVL</span>
+                        <span className="widget-meta">30 active L2s · auto-bucketed by TVL · hover to learn</span>
                       </div>
                       <div className="widget-body flush">
                         <table className="data-table">
@@ -2227,10 +2341,10 @@
 
                     {/* ────────── ROW 3: Rankings (left), Non-airdrop peers (right) ────────── */}
                     {/* Heatmap widget */}
-                    <div className="widget w-6">
+                    <div className="widget w-6" title="Each tile is one L2. Color shows how overpriced the token is vs the chain's actual usage (Mcap ÷ TVL): green = under 2× (healthy), yellow = 2-10× (growth-priced), amber = 10-50× (priced on expectation), red = 50×+ (outlier). ADI is outlined in orange. Click any tile for full chain detail.">
                       <div className="widget-head">
                         <span className="widget-title">Mcap / TVL heatmap</span>
-                        <span className="widget-meta">click any L2 for full detail</span>
+                        <span className="widget-meta">click any L2 for full detail · hover to learn</span>
                       </div>
                       <div className="widget-body">
                         <div className="heatmap">
@@ -2264,10 +2378,10 @@
                     </div>
 
                     {/* Top 10 · Mcap/TVL with sparklines */}
-                    <div className="widget w-6">
+                    <div className="widget w-6" title="The 10 L2 tokens most expensive relative to their chain's TVL. High Mcap/TVL means the market values the token far above the chain's current usage. The 30-day sparkline shows the native token's price trend (red = down, green = up). ADI is pinned at the bottom for context. Click any row to see the full chain detail.">
                       <div className="widget-head">
                         <span className="widget-title">Top 10 · Mcap/TVL + 30d trend</span>
-                        <span className="widget-meta">click row for detail</span>
+                        <span className="widget-meta">click row for detail · hover to learn</span>
                       </div>
                       <div className="widget-body flush">
                         <table className="data-table">
@@ -2306,10 +2420,10 @@
                     </div>
 
                     {/* Top 10 · TVL with deltas */}
-                    <div className="widget w-6">
+                    <div className="widget w-6" title="The 10 L2s with the most real capital deployed in their apps. The 7d and 30d deltas show whether TVL is growing or shrinking on each chain. Click any row for full detail.">
                       <div className="widget-head">
                         <span className="widget-title">Top 10 · TVL + 7d/30d deltas</span>
-                        <span className="widget-meta">largest L2 economies</span>
+                        <span className="widget-meta">largest L2 economies · hover to learn</span>
                       </div>
                       <div className="widget-body flush">
                         <table className="data-table">
@@ -2338,10 +2452,10 @@
                     </div>
 
                     {/* Non-airdrop peer cohort */}
-                    <div className="widget w-6">
+                    <div className="widget w-6" title="The apples-to-apples peer set for ADI: L2 native tokens that did NOT distribute via public airdrop. These tend to have tighter float and higher Mcap/TVL ratios (cohort median ~5.6×) compared to airdrop-distributed tokens (cohort median ~1.4×). ADI's 11.88× sits ~2.1× this peer median. Click any row for full detail.">
                       <div className="widget-head">
                         <span className="widget-title">Non-airdrop peers · ADI cohort</span>
-                        <span className="widget-meta">{nonAirdrop.length + 1} chains · click for detail</span>
+                        <span className="widget-meta">{nonAirdrop.length + 1} chains · click for detail · hover to learn</span>
                       </div>
                       <div className="widget-body flush">
                         <table className="data-table">
@@ -2390,15 +2504,17 @@
                     <div className="page-eyebrow">Mcap vs TVL</div>
                     <h1 className="page-title" style={{ fontSize: 22 }}>Position vs L2 universe</h1>
                   </div>
-                  <div className="section">
-                    <TuiPanel title="MCAP vs TVL · log–log" badge={`${D.rows.filter(r => r.tvl > 0 && (r.chain_mcap||0) > 0).length + 1} chains · snapshot`} flush>
-                      <ScatterMcapVsTvl rows={D.rows} adi={adi} />
+                  <div className="section"
+                       title="Each dot is one L2. X = chain TVL (real capital deployed). Y = native token market cap. Both axes are log scale so chains 1000× apart in size fit on one chart. Dot size grows with Mcap. Dots near the dashed Mcap=TVL line are 'fairly priced' to usage; dots above are growth-priced; dots far above are outliers. The shaded green band is the healthy Mcap/TVL zone (0.3-5×). ADI is shown twice: solid dot = on-chain TVL incl. DDSC ($35M), open dashed dot = DefiLlama-only view ($2M). Hover a dot for chain detail; click to open the detail pane.">
+                    <TuiPanel title="MCAP vs TVL · log–log" badge={`${D.rows.filter(r => r.tvl > 0 && (r.chain_mcap||0) > 0).length + 1} chains · hover or click any dot · hover header to learn`} flush>
+                      <ScatterMcapVsTvl rows={D.rows} adi={adi} openDetail={openDetail} />
                     </TuiPanel>
                   </div>
 
                   <Divider label="ADI Mcap/TVL vs tier-median bands · last 90 days" />
-                  <div className="section">
-                    <TuiPanel title="MCAP / TVL over time" badge={`${D.history.windowDays}d window · tier medians + P25–P75 bands`} flush>
+                  <div className="section"
+                       title="How ADI's Mcap/TVL ratio has moved over the last 90 days vs the median ratio for each L2 tier. The shaded bands show the 25th-75th percentile spread within each tier; chains in the middle 50% of their cohort sit inside the band. ADI's red line shows the DefiLlama-visible view (no DDSC), which trends upward as the token price drifts down on flat indexed TVL. The on-chain ratio is much lower; this chart shows what an external analyst sees on DefiLlama today.">
+                    <TuiPanel title="MCAP / TVL over time" badge={`${D.history.windowDays}d window · tier medians + P25–P75 bands · hover header to learn`} flush>
                       <McapTvlTrend history={D.history} adi={adi} />
                     </TuiPanel>
                   </div>
@@ -2462,8 +2578,9 @@
                       })}
                     </div>
 
-                    <div className="section">
-                      <TuiPanel title="L2 universe" badge={`${filteredRows.length} chains · click any row for full detail`} flush>
+                    <div className="section"
+                         title="One row per L2/rollup. ADI pinned at top. Sortable conceptually by tier. Columns: Chain, Token symbol, Distribution model (airdrop / no token / token swap / fair launch / private), TVL, Mcap, FDV, Mcap/TVL ratio, FDV/TVL ratio, daily transactions, daily active wallets, 24h DEX volume, Vol/TVL %. Click any row for the full detail pane with a 30-day chart. Use the filter chips above to slice by distribution model or tier.">
+                      <TuiPanel title="L2 universe" badge={`${filteredRows.length} chains · click any row for full detail · hover header to learn`} flush>
                         <BenchmarkTable rows={filteredRows} adi={adi} openDetail={openDetail} />
                       </TuiPanel>
                     </div>
