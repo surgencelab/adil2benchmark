@@ -1162,8 +1162,8 @@
         <div className="read-note">
           <strong>Read:</strong> Healthy L2 cohorts sit in the <strong>0.3–10×</strong> band depending on tier.
           The red line shows the <strong>DefiLlama-visible view</strong> of ADI's Mcap/TVL at <span className="danger-text">{fmtX(lastAdi, 0)}</span>. That figure misses
-          {' '}<strong>{D.adi ? fmtUSD(D.adi.ddsc_tvl_usd) : '$121.8M'}</strong> of DDSC minted on ADI Chain (verified via RPC).
-          Counting DDSC, the on-chain Mcap/TVL is <strong>{adiOnChain ? fmtX(adiOnChain, 2) : '3.38×'}</strong>, inside the healthy band.
+          {' '}<strong>{D.adi ? fmtUSD(D.adi.ddsc_tvl_usd) : '$33.2M'}</strong> of DDSC stablecoin (peg 1 AED, FAB-custodied, verified via RPC).
+          Counting DDSC, the on-chain Mcap/TVL is <strong>{adiOnChain ? fmtX(adiOnChain, 2) : '11.88×'}</strong>: growth-priced and above the L2 median, but well within the defensible range for early L2s.
           The chart shows the audit-visible gap, not the on-chain reality.
         </div>
       );
@@ -1280,27 +1280,31 @@
                         <thead>
                           <tr>
                             <th>Component</th>
-                            <th>Asset</th>
-                            <th className="right">Value</th>
+                            <th>Asset / peg</th>
+                            <th className="right">Native units</th>
+                            <th className="right">USD value</th>
                             <th>Verification</th>
                           </tr>
                         </thead>
                         <tbody>
                           <tr>
                             <td>Uniswap V3 active liquidity</td>
-                            <td className="muted">ADI / USDC + ADI / WETH (on Ethereum)</td>
+                            <td className="muted">ADI / USDC + ADI / WETH (Ethereum)</td>
+                            <td className="right muted">-</td>
                             <td className="right">{fmtUSD(adi.tvl_defillama_visible)}</td>
                             <td className="muted">DefiLlama yields page</td>
                           </tr>
                           <tr>
-                            <td>DDSC stablecoin issued (peg $1)</td>
-                            <td className="muted">{adi.ddsc_contract.slice(0,10)}…{adi.ddsc_contract.slice(-4)}</td>
+                            <td>DDSC stablecoin issued</td>
+                            <td className="muted">1 DDSC = 1 AED · reserves at FAB</td>
+                            <td className="right">{adi.ddsc_tvl_aed.toLocaleString(undefined,{maximumFractionDigits:0})} AED</td>
                             <td className="right">{fmtUSD(adi.ddsc_tvl_usd)}</td>
                             <td className="muted">eth_call totalSupply()</td>
                           </tr>
                           <tr style={{ background: 'rgba(255,107,53,0.05)', fontWeight: 600 }}>
                             <td>Total on-chain TVL</td>
-                            <td className="muted">-</td>
+                            <td className="muted">USD-converted at {adi.ddsc_aed_per_usd} AED/USD</td>
+                            <td className="right muted">-</td>
                             <td className="right">{fmtUSD(adi.tvl_with_ddsc)}</td>
                             <td className="muted">Sum, refreshed daily</td>
                           </tr>
@@ -1313,7 +1317,7 @@
                   <div className="section">
                     <div className="verdict">
                       <span className="verdict-label">{`>`} ANALYST READ</span>
-                      Once DDSC's <b>{fmtUSD(adi.ddsc_tvl_usd)}</b> on-chain supply is counted, ADI's TVL is <b>{fmtUSD(adi.tvl_with_ddsc)}</b> and the Mcap/TVL ratio is <b>{fmtX(adi.mcaptvl_with_ddsc, 2)}</b>, squarely inside the healthy growth-priced band (Mid-L2 median {fmtX(sum.Mid.mcap_tvl_med)}, ZKsync Era {fmtX(7.64)}, Manta {fmtX(5.27)}). The widely-cited <b>{fmtX(adi.mcaptvl, 0)} outlier figure</b> is a <em>measurement gap</em>: DefiLlama indexes the {fmtUSD(adi.tvl_defillama_visible)} of Uniswap LP liquidity but not the {fmtUSD(adi.ddsc_tvl_usd)} of DDSC sitting on ADI Chain. The real concern shifts from "token economics vs usage" to <em>"data layer integrity"</em>: Concern #7 in the audit, not Concern #4.
+                      DDSC is pegged 1:1 to <b>AED</b> (not USD), reserves custodied by First Abu Dhabi Bank. At the fixed {adi.ddsc_aed_per_usd} AED/USD peg, the <b>{adi.ddsc_tvl_aed.toLocaleString()} AED</b> supply converts to <b>{fmtUSD(adi.ddsc_tvl_usd)}</b>. Counted alongside the {fmtUSD(adi.tvl_defillama_visible)} of Uniswap LP liquidity, ADI's total on-chain TVL is <b>{fmtUSD(adi.tvl_with_ddsc)}</b>, giving a Mcap/TVL ratio of <b>{fmtX(adi.mcaptvl_with_ddsc, 2)}</b>. That's growth-priced but no longer an outlier: above Mantle ({fmtX(5.83)}) and Manta ({fmtX(5.27)}), below World Chain ({fmtX(24.39)}). The audit's widely-cited <b>{fmtX(adi.mcaptvl, 0)}</b> headline is a measurement gap, DefiLlama doesn't yet index DDSC. The real concern shifts from "token economics vs usage" toward <em>data-layer integrity</em> (Concern #7) plus the still-real liquidity gap (0.15% daily turnover).
                     </div>
                   </div>
 
@@ -1370,7 +1374,7 @@
                             <td className="right">{fmtX(sum.Small.mcap_tvl_med)}</td>
                             <td className="right">{fmtX(sum.Mid.mcap_tvl_med)}</td>
                             <td className="right">{fmtX(sum.Large.mcap_tvl_med)}</td>
-                            <td className="right">Healthy growth band</td>
+                            <td className="right">Growth-priced, above median</td>
                           </tr>
                           <tr>
                             <td>Mcap / TVL ratio (DefiLlama view)<div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.04em', marginTop: 3 }}>Without DDSC counted</div></td>
@@ -1486,14 +1490,17 @@
                         For the 30 peer L2s, we took every rollup chain DefiLlama tracks, sorted them by TVL (the dollar value of crypto held in the chain's apps), and split them into three groups: the top 5 are "Large", the next 10 are "Mid", and the next 15 are "Small". For each group we found the median of four numbers: TVL, native token market cap, daily DEX volume, and the ratio between market cap and TVL.
                       </p>
                       <p className="report-p">
-                        For ADI specifically, we used two TVL definitions. <b>The DefiLlama-visible view</b> counts only what their adapters index today (Uniswap V3 LPs on Ethereum: <b>{fmtUSD(adi.tvl_defillama_visible)}</b>). <b>The on-chain view</b> adds the DDSC stablecoin supply minted on ADI Chain, verified live via <code className="inline">eth_call totalSupply()</code> on <code className="inline">{adi.ddsc_rpc.replace('https://','')}</code>: <b>{fmtUSD(adi.ddsc_tvl_usd)}</b>. DDSC is peg-stable at $1 (CBUAE-licensed).
+                        For ADI specifically, we used two TVL definitions. <b>The DefiLlama-visible view</b> counts only what their adapters index today (Uniswap V3 LPs on Ethereum: <b>{fmtUSD(adi.tvl_defillama_visible)}</b>). <b>The on-chain view</b> adds the DDSC stablecoin supply minted on ADI Chain, verified live via <code className="inline">eth_call totalSupply()</code> on <code className="inline">{adi.ddsc_rpc.replace('https://','')}</code>.
+                      </p>
+                      <p className="report-p">
+                        DDSC is pegged <b>1:1 to the UAE Dirham (AED)</b>, not USD. Reserves are custodied by <b>First Abu Dhabi Bank (FAB)</b>. The on-chain total of <b>{adi.ddsc_tvl_aed.toLocaleString()} DDSC</b> converts at the fixed Central Bank peg of {adi.ddsc_aed_per_usd} AED/USD to <b>{fmtUSD(adi.ddsc_tvl_usd)}</b>. This matches the team's "$33M minted DDSC" figure in the meeting notes once the peg conversion is applied.
                       </p>
 
                       <h3 className="report-h2"><span className="num">02</span>The headline numbers</h3>
                       <div className="report-figures">
                         <div className="report-fig"><div className="l">ADI TVL (on-chain)</div><div className="v">{fmtUSD(adi.tvl_with_ddsc)}</div><div className="s">incl. {fmtUSD(adi.ddsc_tvl_usd)} DDSC</div></div>
                         <div className="report-fig"><div className="l">ADI Mcap</div><div className="v">{fmtUSD(adi.token_mcap)}</div><div className="s">vs $279M large-L2 median</div></div>
-                        <div className="report-fig"><div className="l">Mcap / TVL</div><div className="v">{fmtX(adi.mcaptvl_with_ddsc, 2)}</div><div className="s">healthy growth band</div></div>
+                        <div className="report-fig"><div className="l">Mcap / TVL</div><div className="v">{fmtX(adi.mcaptvl_with_ddsc, 2)}</div><div className="s">growth-priced, above median</div></div>
                         <div className="report-fig"><div className="l">Daily turnover</div><div className="v danger">{fmtPct(adi.turnover_vol_mc_pct)}</div><div className="s">vs &gt;1% liquid threshold</div></div>
                       </div>
 
@@ -1502,13 +1509,13 @@
                         Same Mcap, two different TVL denominators, two very different ratios.
                       </p>
                       <p className="report-p">
-                        <b>On-chain view (verified):</b> {fmtUSD(adi.tvl_with_ddsc)} TVL with DDSC counted, giving a Mcap/TVL ratio of <b>{fmtX(adi.mcaptvl_with_ddsc, 2)}</b>. That sits inside the healthy growth-priced band, next to ZKsync Era ({fmtX(7.64)}), Mantle ({fmtX(5.83)}), and Manta ({fmtX(5.27)}).
+                        <b>On-chain view (verified):</b> {fmtUSD(adi.tvl_with_ddsc)} TVL with DDSC counted, giving a Mcap/TVL ratio of <b>{fmtX(adi.mcaptvl_with_ddsc, 2)}</b>. That's growth-priced: above Mantle ({fmtX(5.83)}) and Manta ({fmtX(5.27)}), below World Chain ({fmtX(24.39)}). Not an outlier, but above the L2 median.
                       </p>
                       <p className="report-p">
-                        <b>DefiLlama-visible view (what the audit sees today):</b> {fmtUSD(adi.tvl_defillama_visible)} TVL, giving a Mcap/TVL ratio of <b>{fmtX(adi.mcaptvl, 0)}</b>. That looks like a 50×+ outlier, alongside IOTA EVM ({fmtX(203.85)}). It looks that way because DefiLlama's adapter for ADI Chain doesn't yet index DDSC, not because the capital isn't there.
+                        <b>DefiLlama-visible view (what the audit sees today):</b> {fmtUSD(adi.tvl_defillama_visible)} TVL, giving a Mcap/TVL ratio of <b>{fmtX(adi.mcaptvl, 0)}</b>. That looks like a 50×+ outlier alongside IOTA EVM ({fmtX(203.85)}). It looks that way because DefiLlama's adapter for ADI Chain doesn't yet index DDSC, not because the capital isn't there.
                       </p>
                       <div className="report-callout">
-                        <strong>The single most important number:</strong> with on-chain DDSC included, ADI's Mcap/TVL is <strong>{fmtX(adi.mcaptvl_with_ddsc, 2)}</strong>. That places ADI inside the same healthy band as several mid-sized L2s with public tokens. The widely-cited 206× number is real <em>but only as a measurement of what DefiLlama indexes today</em>. It's not a measurement of what's on ADI Chain.
+                        <strong>The single most important number:</strong> with on-chain DDSC included, ADI's Mcap/TVL is <strong>{fmtX(adi.mcaptvl_with_ddsc, 2)}</strong>. That's a defensible position, peer to several growth-priced L2s with real but early usage. It is not the same as a mature low-ratio L2 like Arbitrum (0.30×). The widely-cited 206× audit figure is real <em>only as a measurement of what DefiLlama indexes today</em>. The right framing: ADI is growth-priced, the audit overstates the gap because of a missing adapter, and DDSC needs to grow further to bring the ratio toward the L2 median.
                       </div>
 
                       <h3 className="report-h2"><span className="num">04</span>The DEX volume gap is still real</h3>
@@ -1534,17 +1541,17 @@
 
                       <h2 className="report-h1">What it means</h2>
                       <p className="report-lede">
-                        The audit's headline number (Mcap/TVL of 206×) reflects what DefiLlama indexes today, not what's on ADI Chain. The on-chain reality, verified live via RPC, is {fmtX(adi.mcaptvl_with_ddsc, 2)}, inside the healthy band. The work for the next two quarters is making the public data layer catch up to that reality, while the one remaining genuinely-weak number (volume) gets its own fix.
+                        The audit's headline number (Mcap/TVL of 206×) reflects what DefiLlama indexes today, not what's on ADI Chain. The on-chain reality, verified live via RPC, is {fmtX(adi.mcaptvl_with_ddsc, 2)}: growth-priced, above the L2 median, but not an outlier. The 90-day work is closing two gaps: getting the public data layer to catch up with on-chain TVL, and growing DDSC and DEX volume so the ratio moves toward the L2 median over time.
                       </p>
 
-                      <h3 className="report-h2"><span className="num">01</span>The Mcap/TVL "outlier" is a measurement gap, not a fundamentals gap</h3>
+                      <h3 className="report-h2"><span className="num">01</span>The "outlier" framing is overstated, but the ratio is still above median</h3>
                       <p className="report-p">
-                        DefiLlama's adapter for ADI Chain doesn't yet count DDSC. That single missing data point produces the entire 206× headline. Once DDSC's <b>{fmtUSD(adi.ddsc_tvl_usd)}</b> on-chain supply is included, the ratio drops to <b>{fmtX(adi.mcaptvl_with_ddsc, 2)}</b>, peer to ZKsync Era ({fmtX(7.64)}), Mantle ({fmtX(5.83)}), and Manta ({fmtX(5.27)}). The capital exists. The indexer doesn't see it yet.
+                        DefiLlama's adapter for ADI Chain doesn't yet count DDSC. That single missing data point produces the entire 206× headline. Once DDSC's <b>{fmtUSD(adi.ddsc_tvl_usd)}</b> on-chain supply is included (the {adi.ddsc_tvl_aed.toLocaleString()} AED supply converted at the fixed FAB-custodied peg), the ratio drops to <b>{fmtX(adi.mcaptvl_with_ddsc, 2)}</b>: above the Mid-L2 median of {fmtX(sum.Mid.mcap_tvl_med)}, between Mantle ({fmtX(5.83)}) and World Chain ({fmtX(24.39)}). Defensible, but still ahead of where the cohort sits. The capital exists. The token is priced ahead of it.
                       </p>
 
-                      <h3 className="report-h2"><span className="num">02</span>The real concern is data-layer integrity (Concern #7)</h3>
+                      <h3 className="report-h2"><span className="num">02</span>The biggest single fix is a data-layer one (Concern #7)</h3>
                       <p className="report-p">
-                        The audit's Concern #4 ("token economics ahead of usage") and Concern #1 ("99.28% concentration") get defanged by the on-chain TVL number. What remains is Concern #7: every analyst sees DefiLlama's incomplete view first, and forms their conclusion before they ever see the RPC. The fight is over what gets displayed, not over what's true.
+                        Concern #4 ("token economics ahead of usage") is materially weakened by the on-chain TVL number, but not eliminated. Concern #1 ("99.28% concentration") is unchanged by the DDSC update. What's most actionable in the short term is Concern #7: every analyst sees DefiLlama's incomplete view first and forms their conclusion before they ever see the RPC. Closing that display gap moves the public ratio from 206× to ~12× overnight, with no product change required.
                       </p>
 
                       <h3 className="report-h2"><span className="num">03</span>The DEX volume gap is the one that's still real</h3>
@@ -1574,7 +1581,7 @@
                       </p>
 
                       <div className="report-callout">
-                        <strong>Bottom line:</strong> ADI's on-chain Mcap/TVL is <strong>{fmtX(adi.mcaptvl_with_ddsc, 2)}</strong>, inside the healthy growth band. The audit's 206× is real but is measuring DefiLlama's adapter coverage, not ADI Chain. The 90-day work is closing the gap between the two: submit the DDSC and DEX adapters to DefiLlama, publish the vesting schedule alongside the DDSC growth narrative, and let public data catch up to on-chain reality. The volume number and float concentration remain real concerns, but they're separable from the TVL story and have their own fixes.
+                        <strong>Bottom line:</strong> ADI's on-chain Mcap/TVL is <strong>{fmtX(adi.mcaptvl_with_ddsc, 2)}</strong>, growth-priced and above the L2 median but defensible: peer to Mantle, Manta, and several other early L2s with restricted distribution. The audit's 206× is real but is measuring DefiLlama's adapter coverage, not ADI Chain. The 90-day work has three parts: (a) submit the DDSC adapter to DefiLlama so the public ratio matches on-chain, (b) keep DDSC issuance and other real TVL growing to compress the ratio toward the L2 median, and (c) address the volume gap (0.15% turnover) on its own track. Float concentration remains a separate disclosure question that the TVL story doesn't solve.
                       </div>
 
                       <div className="report-footer">
