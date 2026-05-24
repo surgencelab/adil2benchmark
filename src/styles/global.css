@@ -366,17 +366,22 @@
     }
     .report-list {
       margin: 0 0 16px; padding: 0; list-style: none;
-      display: grid; gap: 12px;
+      display: flex; flex-direction: column; gap: 12px;
     }
     .report-list li {
-      display: grid; grid-template-columns: 28px 1fr; gap: 12px;
+      position: relative;
+      padding-left: 18px;
       font-family: var(--font-sans); font-size: 14.5px; line-height: 1.6;
       color: var(--foreground);
     }
-    .report-list .num {
-      font-family: var(--font-mono); font-size: 11px;
-      color: var(--accent-orange); font-weight: 700;
-      padding-top: 4px;
+    .report-list li::before {
+      content: '';
+      position: absolute;
+      left: 2px; top: 11px;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent-orange);
+      opacity: 0.7;
     }
     .report-list b { color: var(--foreground); font-weight: 600; }
     .report-footer {
