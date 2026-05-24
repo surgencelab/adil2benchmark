@@ -128,7 +128,49 @@ export function OverviewPage({ data, setRoute }: Props) {
         </div>
       </div>
 
-      {/* Row 3: Nav cards to other pages */}
+      {/* Row 3: Holder concentration comparison — ADI vs peer cohort */}
+      <div
+        className="widget w-12"
+        title="Top-10 wallets concentration as a % of supply. Higher = more centralised. Sourced from public Etherscan / Blockscout Token Holders pages, rounded to nearest 5%. ADI's 99.28% comes from the audit document. Healthy public L2s sit 30-65%; airdrop-recipient chains skew lower as supply was distributed broadly."
+      >
+        <div className="widget-head">
+          <span className="widget-title">Holder concentration · top 10 wallets</span>
+          <span className="widget-meta">% of supply · public Etherscan snapshots · rounded to 5%</span>
+        </div>
+        <div className="widget-body">
+          {(() => {
+            const peers = data.rows
+              .filter((r) => r.top10_pct != null)
+              .map((r) => ({ name: r.name, sym: r.symbol, pct: r.top10_pct as number, note: r.top10_pct_note || '' }))
+              .sort((a, b) => b.pct - a.pct);
+            const adiPct = adi.top10_pct ?? adi.top10_concentration_pct ?? 0;
+            const allWithAdi = [{ name: 'ADI Chain', sym: 'ADI', pct: adiPct, note: adi.top10_pct_note || '', isAdi: true }, ...peers.map((p) => ({ ...p, isAdi: false }))];
+            const max = 100;
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {allWithAdi.map((p) => {
+                  const barColor = p.isAdi ? 'var(--accent-red)' : p.pct > 80 ? 'var(--accent-yellow)' : p.pct > 60 ? 'var(--accent-orange)' : 'var(--accent-green)';
+                  const labelColor = p.isAdi ? 'var(--accent-red)' : 'var(--foreground)';
+                  return (
+                    <div key={p.name} style={{ display: 'grid', gridTemplateColumns: '160px 1fr 50px', gap: 10, alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 11 }} title={p.note}>
+                      <span style={{ color: labelColor, fontWeight: p.isAdi ? 700 : 500 }}>{p.name}<span style={{ color: 'var(--text-muted)', marginLeft: 4, fontSize: 10 }}>{p.sym}</span></span>
+                      <div style={{ position: 'relative', height: 14, background: 'var(--tint-soft)', borderRadius: 2, overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${(p.pct / max) * 100}%`, background: barColor, opacity: p.isAdi ? 0.95 : 0.78, borderRadius: 2 }} />
+                      </div>
+                      <span style={{ textAlign: 'right', fontWeight: p.isAdi ? 700 : 600, color: labelColor }}>{p.pct.toFixed(0)}%</span>
+                    </div>
+                  );
+                })}
+                <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-sans)', lineHeight: 1.55 }}>
+                  ADI's <b style={{ color: 'var(--accent-red)' }}>99.28%</b> top-10 concentration is the audit's <b>Concern #1</b>. Among public L2s with tokens, the highest is <b>{peers[0]?.name}</b> at <b>{peers[0]?.pct}%</b>. Most airdropped L2s sit 60-80%. Fair-launch / 2017-era chains (IOTA, Lisk) sit 30-35%. <em style={{ color: 'var(--text-muted)' }}>Hover any row for source notes.</em>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* Row 4: Nav cards to other pages */}
       <div className="w-12">
         <div className="nav-cards">
           <div className="nav-card" onClick={() => setRoute('table')}>

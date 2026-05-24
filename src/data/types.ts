@@ -61,6 +61,10 @@ export interface L2Row {
   stables_history?: number[];
   fees_history?: number[];
   history_timestamps?: number[];
+  // Holder concentration (manually seeded from public Etherscan/Blockscout)
+  top10_pct?: number;
+  top10_pct_note?: string;
+  top10_pct_source?: string;
   // ADI-specific (only on the adi row)
   total_24h_vol_all_venues?: number;
   turnover_vol_mc_pct?: number;

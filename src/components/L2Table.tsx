@@ -75,6 +75,15 @@ export function L2Table({ rows, adi, openDetail }: Props) {
         <td className="right">{fmtNum(r.active_wallets_per_day)}</td>
         <td className="right">{fmtUSD(dex, 2)}</td>
         <td className="right">{voltvl == null ? '-' : <span className={voltvl === 0 ? 'danger' : ''}>{fmtPct(voltvl)}</span>}</td>
+        <td className="right" title={r.top10_pct_note || ''}>
+          {r.top10_pct == null ? '-' : (
+            <span className={r.top10_pct > 90 ? 'danger' : r.top10_pct > 70 ? 'warn' : ''}
+                  style={r.top10_pct > 90 ? { color: 'var(--accent-red)', fontWeight: 700 } :
+                         r.top10_pct > 70 ? { color: 'var(--accent-yellow)', fontWeight: 600 } : {}}>
+              {r.top10_pct.toFixed(0)}%
+            </span>
+          )}
+        </td>
       </tr>
     );
   };
@@ -96,16 +105,17 @@ export function L2Table({ rows, adi, openDetail }: Props) {
             <th className="right">Active wallets</th>
             <th className="right">24h DEX</th>
             <th className="right">Vol / TVL</th>
+            <th className="right" title="Concentration: % of supply held by the top 10 wallets. Sourced from public Etherscan / Blockscout 'Token Holders' pages, rounded to nearest 5%. Higher = more centralised (red >90%, yellow >70%).">Top 10 %</th>
           </tr>
         </thead>
         <tbody>
-          <tr className="row-section"><td colSpan={12}>// ADI Chain · audit subject</td></tr>
+          <tr className="row-section"><td colSpan={13}>// ADI Chain · audit subject</td></tr>
           {renderRow(adi as unknown as L2Row, true)}
           {(['Large', 'Mid', 'Small', 'Micro'] as const).flatMap((tier) =>
             grouped[tier].length > 0
               ? [
                   <tr key={`hdr-${tier}`} className="row-section">
-                    <td colSpan={12}>// {tier} L2s · {grouped[tier].length} chains</td>
+                    <td colSpan={13}>// {tier} L2s · {grouped[tier].length} chains</td>
                   </tr>,
                   ...grouped[tier].map((r) => renderRow(r)),
                 ]
