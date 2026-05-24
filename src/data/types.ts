@@ -90,6 +90,20 @@ export interface AdiRow extends L2Row {
   tvl_with_ddsc: number;
   mcaptvl_with_ddsc: number;
   fdv_proof_url?: string | null;
+  ihc_tx?: {
+    amount_aed: number;
+    amount_usd: number;
+    date: string;
+    explorer: string;
+    steps: Array<{
+      label: string;
+      time:  string;
+      from:  string;
+      to:    string;
+      block: number;
+      hash:  string;
+    }>;
+  };
 }
 
 export interface TierSummary {

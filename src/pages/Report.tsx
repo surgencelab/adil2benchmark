@@ -96,9 +96,32 @@ export function ReportPage({ data }: Props) {
             DDSC explains the TVL gap, not the volume gap. DefiLlama shows $0/day DEX volume on ADI Chain; cross-venue aggregate is $610K against $418M Mcap = 0.15% turnover. Either ADI's DEXes have real swaps that DefiLlama doesn't index (same fix as DDSC), or activity is genuinely thin. Each case has its own fix.
           </p>
 
-          <h3 className="report-h2"><span className="num">04</span>IHC's $30M proof</h3>
+          <h3 className="report-h2"><span className="num">04</span>IHC's $30M proof · verified on-chain</h3>
           <p className="report-p">
-            International Holding Company executed a $30M (110M AED) DDSC transaction on ADI Chain in partnership with FAB and Sirius. First major corporate-scale transfer of a UAE Central Bank-regulated digital currency. That's a verifiable counterexample to "the chain has no real activity."
+            International Holding Company executed a $30M (110.175M AED) DDSC settlement on ADI Chain on <b>14 Apr 2026</b>, in partnership with FAB and Sirius. We verified this directly via the ADI explorer — the settlement is three on-chain transactions in sequence, all at the exact $30M / 110.175M AED amount, all within a 2-hour window:
+          </p>
+          {adi.ihc_tx && (
+            <div style={{ margin: '12px 0', padding: '12px 14px', background: 'rgba(46,204,113,0.06)', border: '1px solid rgba(46,204,113,0.30)', borderRadius: 4, fontFamily: 'var(--font-mono)', fontSize: 11.5, lineHeight: 1.55 }}>
+              {adi.ihc_tx.steps.map((s, i) => (
+                <div key={s.hash} style={{ marginBottom: i < adi.ihc_tx!.steps.length - 1 ? 8 : 0 }}>
+                  <div style={{ color: 'var(--accent-green)', fontWeight: 700, fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    Step {i + 1} · {s.label} · {new Date(s.time).toUTCString().slice(5, 22)}
+                  </div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>
+                    from {s.from.slice(0, 10)}…{s.from.slice(-4)} → to {s.to.slice(0, 10)}…{s.to.slice(-4)} · block {s.block.toLocaleString()}
+                  </div>
+                  <div style={{ marginTop: 2 }}>
+                    <a href={`${adi.ihc_tx!.explorer}/tx/${s.hash}`} target="_blank" rel="noreferrer"
+                       style={{ color: 'var(--accent-orange)', fontSize: 10, wordBreak: 'break-all' }}>
+                      {s.hash}
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="report-p">
+            This is a real counterexample to "the chain has no on-chain activity". The pattern (mint → treasury hop → final settlement) is the textbook flow for a regulator-aligned stablecoin issuance: DDSC is minted, passes through a treasury wallet, lands at the counterparty. Anyone can verify the three hashes above against the ADI explorer.
           </p>
 
           <h3 className="report-h2"><span className="num">05</span>What can't be fixed with marketing</h3>
