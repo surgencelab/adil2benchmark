@@ -175,4 +175,4 @@ export interface Dataset {
 
 export type Theme = 'dark' | 'light';
 export type Metric = 'mcap' | 'fdv';
-export type Route = 'overview' | 'scatter' | 'table' | 'report';
+export type Route = 'overview' | 'scatter' | 'table' | 'report' | 'methodology';

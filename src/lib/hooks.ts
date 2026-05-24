@@ -108,6 +108,7 @@ export function useGlobalShortcuts(opts: {
       '2': 'scatter',
       '3': 'table',
       '4': 'report',
+      '5': 'methodology',
     };
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;

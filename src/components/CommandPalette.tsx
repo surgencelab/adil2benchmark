@@ -24,6 +24,7 @@ const COMMANDS: Command[] = [
   { id: 'go-scatter',  label: 'Go: Charts',            shortcut: '2',  run: (c) => c.setRoute('scatter') },
   { id: 'go-table',    label: 'Go: L2 Universe table', shortcut: '3',  run: (c) => c.setRoute('table') },
   { id: 'go-report',   label: 'Go: Report',            shortcut: '4',  run: (c) => c.setRoute('report') },
+  { id: 'go-methodology', label: 'Go: Methodology',    shortcut: '5',  run: (c) => c.setRoute('methodology') },
   { id: 'metric-fdv',  label: 'Metric: FDV',           shortcut: 'F',  run: (c) => c.setMetric('fdv') },
   { id: 'metric-mcap', label: 'Metric: Mcap',          shortcut: 'M',  run: (c) => c.setMetric('mcap') },
   { id: 'theme',       label: 'Toggle dark / light mode', shortcut: 'T', run: (c) => c.toggleTheme() },

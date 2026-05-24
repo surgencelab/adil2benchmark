@@ -12,6 +12,7 @@ import { OverviewPage } from './pages/Overview';
 import { ChartsPage } from './pages/Charts';
 import { L2UniversePage } from './pages/L2Universe';
 import { ReportPage } from './pages/Report';
+import { MethodologyPage } from './pages/Methodology';
 
 export default function App() {
   const { data, loading, error, reload } = useDataset();
@@ -159,6 +160,7 @@ export default function App() {
           {active === 'scatter' && <ChartsPage data={data} metric={metric} setMetric={setMetric} openDetail={setDetail} />}
           {active === 'table' && <L2UniversePage data={data} filterId={tableFilter} setFilterId={setTableFilter} openDetail={setDetail} />}
           {active === 'report' && <ReportPage data={data} />}
+          {active === 'methodology' && <MethodologyPage data={data} />}
         </MainWrap>
         <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} ctx={{
           setRoute: (r) => setActive(r as Route),
