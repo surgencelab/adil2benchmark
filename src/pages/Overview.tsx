@@ -128,10 +128,10 @@ export function OverviewPage({ data, setRoute }: Props) {
         </div>
       </div>
 
-      {/* Row 3: Holder concentration comparison — ADI vs peer cohort */}
+      {/* Row 3: Holder concentration comparison, ADI vs peer cohort */}
       <div
         className="widget w-12"
-        title="Top-10 wallets concentration as a % of supply. Higher = more centralised. 14/17 L2 tokens are live from Moralis erc20/owners (indexed view, one call per token, returns top holders sorted with pre-computed % of supply). Scroll, Blast, BOB keep manually-seeded values since Moralis does not index those chains. ADI's 99.28% comes from the audit document. Bridge / treasury contracts are counted as holders — for chains like Linea (97.6% in TokenBridge) or Metis (65% in Bridge) the apparent concentration reflects unbridged supply rather than whale wallets; hover the row to see the top-holder label."
+        title="Top-10 wallets concentration as a % of supply. Higher = more centralised. 14/17 L2 tokens are live from Moralis erc20/owners (indexed view, one call per token, returns top holders sorted with pre-computed % of supply). Scroll, Blast, BOB keep manually-seeded values since Moralis does not index those chains. ADI's 99.28% comes from the audit document. Bridge / treasury contracts are counted as holders, for chains like Linea (97.6% in TokenBridge) or Metis (65% in Bridge) the apparent concentration reflects unbridged supply rather than whale wallets; hover the row to see the top-holder label."
       >
         <div className="widget-head">
           <span className="widget-title">Holder concentration · top 10 wallets</span>

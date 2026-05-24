@@ -33,45 +33,45 @@ export function MethodologyPage({ data }: Props) {
             them into <code className="inline">public/data.json</code> which the React app reads on load.
           </p>
 
-          <h3 className="report-h2"><span className="num">01</span>DefiLlama — chain TVL, token Mcap, DEX volume</h3>
+          <h3 className="report-h2"><span className="num">01</span>DefiLlama, chain TVL, token Mcap, DEX volume</h3>
           <p className="report-p">
             Free, no API key. Endpoints used:
           </p>
           <ul className="report-list">
-            <li><code className="inline">api.llama.fi/protocols</code> — current TVL per protocol, summed per chain to build the L2 list</li>
-            <li><code className="inline">api.llama.fi/v2/historicalChainTvl/&#123;chain&#125;</code> — 90-day TVL history for tier bands</li>
-            <li><code className="inline">api.llama.fi/overview/dexs/&#123;chain&#125;</code> — 24h / 7d / 30d DEX volume</li>
-            <li><code className="inline">coins.llama.fi/prices/current/&#123;chain&#125;:&#123;addr&#125;</code> — chain-native token price (fallback to CoinGecko)</li>
+            <li><code className="inline">api.llama.fi/protocols</code>, current TVL per protocol, summed per chain to build the L2 list</li>
+            <li><code className="inline">api.llama.fi/v2/historicalChainTvl/&#123;chain&#125;</code>, 90-day TVL history for tier bands</li>
+            <li><code className="inline">api.llama.fi/overview/dexs/&#123;chain&#125;</code>, 24h / 7d / 30d DEX volume</li>
+            <li><code className="inline">coins.llama.fi/prices/current/&#123;chain&#125;:&#123;addr&#125;</code>, chain-native token price (fallback to CoinGecko)</li>
           </ul>
           <p className="report-p muted">
-            We treat DefiLlama as ground truth for TVL — they index protocol contracts directly
+            We treat DefiLlama as ground truth for TVL, they index protocol contracts directly
             from on-chain calls. We do not re-verify their adapter outputs per chain.
           </p>
 
-          <h3 className="report-h2"><span className="num">02</span>CoinGecko — FDV, max supply, 30d sparklines</h3>
+          <h3 className="report-h2"><span className="num">02</span>CoinGecko, FDV, max supply, 30d sparklines</h3>
           <p className="report-p">
             Free public API, no key. Endpoints used:
           </p>
           <ul className="report-list">
-            <li><code className="inline">api.coingecko.com/api/v3/coins/&#123;id&#125;</code> — market_data (price, mcap, fdv, circulating + max supply, 24h volume)</li>
-            <li><code className="inline">api.coingecko.com/api/v3/coins/&#123;id&#125;/market_chart?days=30</code> — 30-day price series for sparklines</li>
+            <li><code className="inline">api.coingecko.com/api/v3/coins/&#123;id&#125;</code>, market_data (price, mcap, fdv, circulating + max supply, 24h volume)</li>
+            <li><code className="inline">api.coingecko.com/api/v3/coins/&#123;id&#125;/market_chart?days=30</code>, 30-day price series for sparklines</li>
           </ul>
           <p className="report-p">
             The mapping from dashboard chain name → CoinGecko slug lives in <code className="inline">scripts/fetch_activity.py</code>.
-            Five chains have no CG coverage (Cyber, Swellchain, Polynomial, GateLayer, MegaETH) — their FDV / token-price cells show "–".
+            Five chains have no CG coverage (Cyber, Swellchain, Polynomial, GateLayer, MegaETH), their FDV / token-price cells show "–".
           </p>
 
-          <h3 className="report-h2"><span className="num">03</span>Growthepie — tx/day, daily active wallets, fees, stables</h3>
+          <h3 className="report-h2"><span className="num">03</span>Growthepie, tx/day, daily active wallets, fees, stables</h3>
           <p className="report-p">
             Free public API, no key. One call per chain:
           </p>
           <ul className="report-list">
-            <li><code className="inline">api.growthepie.xyz/v1/chains/&#123;slug&#125;.json</code> — full metric suite with daily history</li>
+            <li><code className="inline">api.growthepie.xyz/v1/chains/&#123;slug&#125;.json</code>, full metric suite with daily history</li>
           </ul>
           <p className="report-p">
             Growthepie tracks <b>31 L2 chains</b>. The 26 long-tail chains we list (Cyber,
             Swellchain, Polynomial, Pepu, Moonchain, Matchain, Mind Network, etc.) are
-            not on their list, so their activity columns show "–" — that's a coverage
+            not on their list, so their activity columns show "–", that's a coverage
             gap, not missing data.
           </p>
           <p className="report-p muted">
@@ -80,12 +80,12 @@ export function MethodologyPage({ data }: Props) {
             DAA is ~6K; a single-day spike to 31K we observed during testing is one such artifact.
           </p>
 
-          <h3 className="report-h2"><span className="num">04</span>Moralis — top-10 holder concentration</h3>
+          <h3 className="report-h2"><span className="num">04</span>Moralis, top-10 holder concentration</h3>
           <p className="report-p">
             Requires an API key (free tier 40K compute units/day). Single endpoint:
           </p>
           <ul className="report-list">
-            <li><code className="inline">deep-index.moralis.io/api/v2.2/erc20/&#123;addr&#125;/owners?chain=&#123;c&#125;&amp;limit=20&amp;order=DESC</code> — top holders sorted by balance, with pre-computed <code className="inline">percentage_relative_to_total_supply</code> per holder, plus owner labels (e.g. "Arbitrum: DAO Treasury", "Binance: Cold Wallet")</li>
+            <li><code className="inline">deep-index.moralis.io/api/v2.2/erc20/&#123;addr&#125;/owners?chain=&#123;c&#125;&amp;limit=20&amp;order=DESC</code>, top holders sorted by balance, with pre-computed <code className="inline">percentage_relative_to_total_supply</code> per holder, plus owner labels (e.g. "Arbitrum: DAO Treasury", "Binance: Cold Wallet")</li>
           </ul>
           <p className="report-p">
             We pull 20, filter out two burn-sink addresses
@@ -99,14 +99,14 @@ export function MethodologyPage({ data }: Props) {
             not yet index those chains. Each row's tooltip shows its actual source.
           </p>
 
-          <h3 className="report-h2"><span className="num">05</span>ADI RPC + ADI Explorer — DDSC and IHC verification</h3>
+          <h3 className="report-h2"><span className="num">05</span>ADI RPC + ADI Explorer, DDSC and IHC verification</h3>
           <p className="report-p">
             Direct on-chain reads against ADI Foundation's own infrastructure.
-            No third-party intermediary — these are the proof points.
+            No third-party intermediary, these are the proof points.
           </p>
           <ul className="report-list">
-            <li><code className="inline">{adi.ddsc_rpc.replace('https://', '')}</code> — JSON-RPC <code className="inline">eth_call</code> to DDSC contract <code className="inline">{adi.ddsc_contract}</code>, selector <code className="inline">0x18160ddd</code> (<code className="inline">totalSupply()</code>)</li>
-            <li><code className="inline">explorer-api.adifoundation.ai/api/v2/...</code> — transaction-trail walk to verify the IHC $30M settlement (mint → treasury hop → final)</li>
+            <li><code className="inline">{adi.ddsc_rpc.replace('https://', '')}</code>, JSON-RPC <code className="inline">eth_call</code> to DDSC contract <code className="inline">{adi.ddsc_contract}</code>, selector <code className="inline">0x18160ddd</code> (<code className="inline">totalSupply()</code>)</li>
+            <li><code className="inline">explorer-api.adifoundation.ai/api/v2/...</code>, transaction-trail walk to verify the IHC $30M settlement (mint → treasury hop → final)</li>
           </ul>
         </article>
 
@@ -126,7 +126,7 @@ export function MethodologyPage({ data }: Props) {
           <h3 className="report-h2"><span className="num">01</span>Mcap / TVL and FDV / TVL</h3>
           <p className="report-p">
             Direct ratios. We surface both because Mcap (circulating × price) and FDV
-            (max supply × price) tell different stories — the team prefers FDV because it
+            (max supply × price) tell different stories, the team prefers FDV because it
             captures locked / vesting supply.
           </p>
           <ul className="report-list">
@@ -161,11 +161,11 @@ export function MethodologyPage({ data }: Props) {
             All peer L2s are sorted by current TVL (descending), then sliced:
           </p>
           <ul className="report-list">
-            <li><b>Large</b> — ranks 1-5 (currently: Base, Arbitrum, OP, Mantle, Linea)</li>
-            <li><b>Mid</b> — ranks 6-15</li>
-            <li><b>Small</b> — ranks 16-30</li>
-            <li><b>Micro</b> — rest of the long tail</li>
-            <li><b>ADI</b> — special tier, never bucketed with peers</li>
+            <li><b>Large</b>, ranks 1-5 (currently: Base, Arbitrum, OP, Mantle, Linea)</li>
+            <li><b>Mid</b>, ranks 6-15</li>
+            <li><b>Small</b>, ranks 16-30</li>
+            <li><b>Micro</b>, rest of the long tail</li>
+            <li><b>ADI</b>, special tier, never bucketed with peers</li>
           </ul>
           <p className="report-p muted">
             Tier membership is recomputed on every refresh, so a chain can move between
@@ -178,7 +178,7 @@ export function MethodologyPage({ data }: Props) {
             Each L2 is classified into one of three cohorts (see Page 3 for the rules).
             For each cohort we compute the median of these metrics across its members:
             TVL, Mcap, FDV, 24h DEX volume, Mcap/TVL, FDV/TVL, tx/day, daily active wallets.
-            The "Non-airdrop (have token)" cohort is what we benchmark ADI against —
+            The "Non-airdrop (have token)" cohort is what we benchmark ADI against ,
             same lifecycle stage, no inflated DAA from airdrop-day spikes.
           </p>
 
@@ -229,21 +229,21 @@ export function MethodologyPage({ data }: Props) {
             lockup. All four of our fair-launch chains are 2015-2021 era:
           </p>
           <ul className="report-list">
-            <li><b>IOTA</b> (2015) — Bitcointalk-forum ICO at $0.00001/MIOTA</li>
-            <li><b>Lisk</b> (2016) — 25-day BTC contribution window, one price for all</li>
-            <li><b>Celo</b> (2020) — CoinList public sale, no separate insider tier</li>
-            <li><b>Metis</b> (2021) — Polis token swap, no pre-mine, no VC round</li>
+            <li><b>IOTA</b> (2015), Bitcointalk-forum ICO at $0.00001/MIOTA</li>
+            <li><b>Lisk</b> (2016), 25-day BTC contribution window, one price for all</li>
+            <li><b>Celo</b> (2020), CoinList public sale, no separate insider tier</li>
+            <li><b>Metis</b> (2021), Polis token swap, no pre-mine, no VC round</li>
           </ul>
 
           <h3 className="report-h2"><span className="num">03</span>token_swap</h3>
           <p className="report-p">
-            Current token isn't a fresh launch — holders inherited it via 1:1 conversion
+            Current token isn't a fresh launch, holders inherited it via 1:1 conversion
             from a predecessor token. No new distribution event, no new opportunity for outsiders.
             The <i>least</i> democratic of the four categories.
           </p>
           <ul className="report-list">
-            <li><b>Mantle (MNT)</b> — BitDAO's BIT token (2021) → MNT 1:1 in May 2023. Top holder is "BitDAO: Treasury" with 46.6%</li>
-            <li><b>Cronos zkEVM (ZKCRO)</b> — Cronos chain's CRO distribution mirrored to ZKCRO; Crypto.com dominant</li>
+            <li><b>Mantle (MNT)</b>, BitDAO's BIT token (2021) → MNT 1:1 in May 2023. Top holder is "BitDAO: Treasury" with 46.6%</li>
+            <li><b>Cronos zkEVM (ZKCRO)</b>, Cronos chain's CRO distribution mirrored to ZKCRO; Crypto.com dominant</li>
           </ul>
 
           <h3 className="report-h2"><span className="num">04</span>no_token</h3>
@@ -255,7 +255,7 @@ export function MethodologyPage({ data }: Props) {
           <h3 className="report-h2"><span className="num">05</span>private_only</h3>
           <p className="report-p">
             Token exists but was distributed only through private / strategic rounds, no
-            public sale, no broad airdrop. ADI Chain itself falls here — distribution is
+            public sale, no broad airdrop. ADI Chain itself falls here, distribution is
             allocated rather than public-priced.
           </p>
 
@@ -264,11 +264,11 @@ export function MethodologyPage({ data }: Props) {
             We report two Mcap/TVL ratios for ADI to be transparent about the data gap:
           </p>
           <ul className="report-list">
-            <li><b>DefiLlama-visible view</b> — uses ${adi.tvl_defillama_visible.toLocaleString()} TVL (Uniswap V3 LPs on Ethereum only). Mcap/TVL = <b>{adi.mcaptvl?.toFixed(0)}×</b>. Looks like an outlier alongside IOTA EVM.</li>
-            <li><b>On-chain view</b> — adds the verified DDSC supply for ${adi.tvl_with_ddsc.toLocaleString(undefined, { maximumFractionDigits: 0 })} TVL. Mcap/TVL = <b>{adi.mcaptvl_with_ddsc.toFixed(2)}×</b>. Above large-L2 median but in a defensible range.</li>
+            <li><b>DefiLlama-visible view</b>, uses ${adi.tvl_defillama_visible.toLocaleString()} TVL (Uniswap V3 LPs on Ethereum only). Mcap/TVL = <b>{adi.mcaptvl?.toFixed(0)}×</b>. Looks like an outlier alongside IOTA EVM.</li>
+            <li><b>On-chain view</b>, adds the verified DDSC supply for ${adi.tvl_with_ddsc.toLocaleString(undefined, { maximumFractionDigits: 0 })} TVL. Mcap/TVL = <b>{adi.mcaptvl_with_ddsc.toFixed(2)}×</b>. Above large-L2 median but in a defensible range.</li>
           </ul>
           <p className="report-p">
-            Both numbers are correct — they answer different questions ("what does the
+            Both numbers are correct, they answer different questions ("what does the
             generic aggregator see?" vs "what is actually on-chain?"). The gap is a
             data-layer problem (DefiLlama hasn't built an adapter for DDSC yet), not a
             disagreement about the underlying facts.
@@ -288,15 +288,15 @@ export function MethodologyPage({ data }: Props) {
             merges into <code className="inline">public/data.json</code>. Two trigger paths:
           </p>
           <ul className="report-list">
-            <li><b>GitHub Action</b> (<code className="inline">.github/workflows/refresh-data.yml</code>) — manual trigger from the Actions tab. Runs all fetchers, commits the refreshed JSON, pushes to <code className="inline">main</code>. Vercel auto-redeploys on push. Full cycle ~5 minutes.</li>
-            <li><b>Local dev</b> (<code className="inline">npm run dev</code>) — Vite middleware exposes <code className="inline">POST /api/refresh</code> which spawns the same Python pipeline. The dashboard's "↻ Refresh" button calls this.</li>
+            <li><b>GitHub Action</b> (<code className="inline">.github/workflows/refresh-data.yml</code>), manual trigger from the Actions tab. Runs all fetchers, commits the refreshed JSON, pushes to <code className="inline">main</code>. Vercel auto-redeploys on push. Full cycle ~5 minutes.</li>
+            <li><b>Local dev</b> (<code className="inline">npm run dev</code>), Vite middleware exposes <code className="inline">POST /api/refresh</code> which spawns the same Python pipeline. The dashboard's "↻ Refresh" button calls this.</li>
           </ul>
           <p className="report-p">
             Two API keys are required for the full refresh to run end-to-end:
             <code className="inline"> MORALIS_API_KEY</code> (free tier, 40K CU/day) for live holder data,
             and (optionally) <code className="inline">ALCHEMY_API_KEY</code> as fallback for the
             Alchemy walker. Without keys, the merge preserves the previously-committed
-            holder values — the rest of the dashboard refreshes normally.
+            holder values, the rest of the dashboard refreshes normally.
           </p>
 
           <h2 className="report-h1" style={{ marginTop: 28 }}>What we do not measure (caveats)</h2>
@@ -314,13 +314,13 @@ export function MethodologyPage({ data }: Props) {
           <h3 className="report-h2"><span className="num">02</span>Bridge / treasury contracts count as holders</h3>
           <p className="report-p">
             By design, but worth knowing. Linea's 99% top-10 is 97.6% in the canonical TokenBridge
-            proxy — that's unbridged supply, not concentrated whales. The tooltip surfaces the
+            proxy, that's unbridged supply, not concentrated whales. The tooltip surfaces the
             top-holder label, but the chart bar still reads "99%."
           </p>
 
           <h3 className="report-h2"><span className="num">03</span>Three chains keep manually-seeded holder values</h3>
           <p className="report-p">
-            Scroll, Blast, BOB — Moralis does not index those chains. We use the figure from
+            Scroll, Blast, BOB, Moralis does not index those chains. We use the figure from
             each chain's public Etherscan / Blockscout "Token Holders" page, refreshed by hand
             quarterly. The row's <code className="inline">top10_pct_source</code> field shows whether the value is live or seeded.
           </p>
@@ -334,7 +334,7 @@ export function MethodologyPage({ data }: Props) {
 
           <h3 className="report-h2"><span className="num">05</span>Distribution-model tags are our manual judgment</h3>
           <p className="report-p">
-            No API publishes "this token was a fair launch" as a structured field — that's our
+            No API publishes "this token was a fair launch" as a structured field, that's our
             classification from each token's public history. Tags should be reviewed before
             being cited externally. Page 3 lists the per-tag definitions.
           </p>
@@ -343,7 +343,7 @@ export function MethodologyPage({ data }: Props) {
           <p className="report-p">
             Growthepie only tracks 31 L2s. The 26 chains in our table without DAA / tx /
             fees data (Cyber, Swellchain, Polynomial, Pepu, Moonchain, Matchain, Mind Network,
-            Moonchain, Kroma, etc.) show "–" — they're listed because DefiLlama indexes
+            Moonchain, Kroma, etc.) show "–", they're listed because DefiLlama indexes
             their TVL, but Growthepie doesn't publish daily metrics for them.
           </p>
 

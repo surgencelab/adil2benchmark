@@ -1,6 +1,6 @@
 /**
  * Chart primitives: ChartWrapper (toolbar + watermark + footer + expand)
- * and the two main visualisations — ScatterMcapVsTvl and McapTvlTrend.
+ * and the two main visualisations, ScatterMcapVsTvl and McapTvlTrend.
  */
 import { useRef, useState, type ReactNode, useCallback } from 'react';
 import type { L2Row, AdiRow, Dataset, Metric } from '../data/types';
