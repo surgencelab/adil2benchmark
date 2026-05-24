@@ -105,7 +105,7 @@ export function L2Table({ rows, adi, openDetail }: Props) {
             <th className="right">Active wallets</th>
             <th className="right">24h DEX</th>
             <th className="right">Vol / TVL</th>
-            <th className="right" title="Concentration: % of supply held by the top 10 wallets. Higher = more centralised (red >90%, yellow >70%). Small/mid-tier tokens are live-walked via Alchemy alchemy_getAssetTransfers; high-volume tokens (ARB, OP, MNT, LINEA) keep manually-seeded values from Etherscan's public Token Holders page (their multi-million Transfer history exceeds practical walk caps; Etherscan's tokenholderlist endpoint is Pro-only). Hover any cell for per-row source.">Top 10 %</th>
+            <th className="right" title="Concentration: % of supply held by the top 10 wallets. Higher = more centralised (red >90%, yellow >70%). 14/17 L2 tokens live from Moralis erc20/owners (indexed view, one call per token, pre-computed % of supply). Scroll, Blast, BOB keep manually-seeded values from Etherscan's public Token Holders page since Moralis does not index those chains. Bridge / treasury contracts count as holders — Linea 99% and Metis 84% reflect unbridged supply locked in the chain's bridge, not whale concentration. Hover any cell for per-row source + top-holder label.">Top 10 %</th>
           </tr>
         </thead>
         <tbody>

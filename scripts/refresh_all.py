@@ -34,10 +34,12 @@ def main():
     run('fetch_growthepie_history.py')
     run('fetch_sparklines.py')
     run('fetch_ddsc.py')
-    # fetch_holders_alchemy.py is a no-op without ALCHEMY_API_KEY env var.
-    # When set, walks ERC-20 Transfer events per token via Alchemy and
-    # computes real top-10 wallet concentration. Falls back to seed otherwise.
-    run('fetch_holders_alchemy.py')
+    # fetch_holders_moralis.py is a no-op without MORALIS_API_KEY env var.
+    # When set, queries Moralis erc20/owners (indexed view, single REST call
+    # per token, returns top holders sorted with pre-computed % of supply).
+    # Covers 14/17 L2 governance tokens; Scroll/Blast/BOB keep manual seeds
+    # since Moralis does not index those chains.
+    run('fetch_holders_moralis.py')
 
     # Merge: start from the existing data.json if present, then overlay
     # whatever the fetchers produced.

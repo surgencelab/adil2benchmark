@@ -22,6 +22,7 @@ jobs:
 
       - name: Run all fetchers + merge
         env:
+          MORALIS_API_KEY: ${{ secrets.MORALIS_API_KEY }}
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
         run: python3 scripts/refresh_all.py
 
