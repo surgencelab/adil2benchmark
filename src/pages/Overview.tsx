@@ -131,11 +131,11 @@ export function OverviewPage({ data, setRoute }: Props) {
       {/* Row 3: Holder concentration comparison — ADI vs peer cohort */}
       <div
         className="widget w-12"
-        title="Top-10 wallets concentration as a % of supply. Higher = more centralised. Sourced from public Etherscan / Blockscout Token Holders pages, rounded to nearest 5%. ADI's 99.28% comes from the audit document. Healthy public L2s sit 30-65%; airdrop-recipient chains skew lower as supply was distributed broadly."
+        title="Top-10 wallets concentration as a % of supply. Higher = more centralised. Small/mid-tier L2 tokens are live-walked via Alchemy alchemy_getAssetTransfers (full Transfer event history). High-volume tokens (ARB, OP, MNT, LINEA — multi-million transfers) are seeded from public Etherscan / Blockscout Token Holders pages, rounded to nearest 5%, refreshed quarterly. ADI's 99.28% comes from the audit document. Healthy public L2s sit 30-65%; airdrop-recipient chains skew lower."
       >
         <div className="widget-head">
           <span className="widget-title">Holder concentration · top 10 wallets</span>
-          <span className="widget-meta">% of supply · public Etherscan snapshots · rounded to 5%</span>
+          <span className="widget-meta">% of supply · live-walked via Alchemy where feasible, otherwise public-explorer seed</span>
         </div>
         <div className="widget-body">
           {(() => {
@@ -162,7 +162,10 @@ export function OverviewPage({ data, setRoute }: Props) {
                   );
                 })}
                 <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-sans)', lineHeight: 1.55 }}>
-                  ADI's <b style={{ color: 'var(--accent-red)' }}>99.28%</b> top-10 concentration is the audit's <b>Concern #1</b>. Among public L2s with tokens, the highest is <b>{peers[0]?.name}</b> at <b>{peers[0]?.pct}%</b>. Most airdropped L2s sit 60-80%. Fair-launch / 2017-era chains (IOTA, Lisk) sit 30-35%. <em style={{ color: 'var(--text-muted)' }}>Hover any row for source notes.</em>
+                  ADI's <b style={{ color: 'var(--accent-red)' }}>99.28%</b> top-10 concentration is the audit's <b>Concern #1</b>. Among public L2s with tokens, the highest is <b>{peers[0]?.name}</b> at <b>{peers[0]?.pct}%</b>. Most airdropped L2s sit 60-80%. Fair-launch / 2017-era chains (IOTA, Lisk) sit 30-35%. <em style={{ color: 'var(--text-muted)' }}>Hover any row for source notes.</em><br />
+                  <span style={{ fontSize: 10, opacity: 0.8 }}>
+                    <b>Sourcing:</b> small/mid-tier rows live-walked via Alchemy <code>alchemy_getAssetTransfers</code>; ARB / OP / MNT / LINEA seeded from Etherscan's public Token Holders pages (their multi-million Transfer history exceeds practical walk caps). Etherscan's <code>tokenholderlist</code> endpoint is Pro-only.
+                  </span>
                 </div>
               </div>
             );

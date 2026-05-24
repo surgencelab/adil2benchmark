@@ -105,7 +105,7 @@ export function L2Table({ rows, adi, openDetail }: Props) {
             <th className="right">Active wallets</th>
             <th className="right">24h DEX</th>
             <th className="right">Vol / TVL</th>
-            <th className="right" title="Concentration: % of supply held by the top 10 wallets. Sourced from public Etherscan / Blockscout 'Token Holders' pages, rounded to nearest 5%. Higher = more centralised (red >90%, yellow >70%).">Top 10 %</th>
+            <th className="right" title="Concentration: % of supply held by the top 10 wallets. Higher = more centralised (red >90%, yellow >70%). Small/mid-tier tokens are live-walked via Alchemy alchemy_getAssetTransfers; high-volume tokens (ARB, OP, MNT, LINEA) keep manually-seeded values from Etherscan's public Token Holders page (their multi-million Transfer history exceeds practical walk caps; Etherscan's tokenholderlist endpoint is Pro-only). Hover any cell for per-row source.">Top 10 %</th>
           </tr>
         </thead>
         <tbody>
