@@ -34,6 +34,10 @@ def main():
     run('fetch_growthepie_history.py')
     run('fetch_sparklines.py')
     run('fetch_ddsc.py')
+    # fetch_holders_alchemy.py is a no-op without ALCHEMY_API_KEY env var.
+    # When set, walks ERC-20 Transfer events per token via Alchemy and
+    # computes real top-10 wallet concentration. Falls back to seed otherwise.
+    run('fetch_holders_alchemy.py')
 
     # Merge: start from the existing data.json if present, then overlay
     # whatever the fetchers produced.

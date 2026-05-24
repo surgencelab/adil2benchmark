@@ -21,6 +21,8 @@ jobs:
           python-version: '3.11'
 
       - name: Run all fetchers + merge
+        env:
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
         run: python3 scripts/refresh_all.py
 
       - name: Commit refreshed data.json
