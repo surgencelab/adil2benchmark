@@ -83,7 +83,12 @@ interface SidebarProps {
 export function Sidebar({ active, setActive, onCmd, onExport, onToggleTheme, theme }: SidebarProps) {
   return (
     <aside className="sidebar-nav">
-      <div className="sidebar-brand" title="ADI L2 Benchmark">DL</div>
+      <img
+        className="sidebar-brand"
+        src="/surgence-logo.png"
+        alt="Surgence Labs"
+        title="ADI L2 Benchmark · Surgence Labs"
+      />
       {NAV.map((n) => (
         <div
           key={n.id}

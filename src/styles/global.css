@@ -58,8 +58,6 @@
       --accent-cyan:   #0090B2;
     }
 
-    /* Brand tile reads orange on white in light mode */
-    body[data-theme="light"] .sidebar-brand { color: #FFFFFF; }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
@@ -102,10 +100,11 @@
     .sidebar-brand {
       width: 36px; height: 36px;
       border-radius: 6px;
-      background: linear-gradient(135deg, var(--accent-orange), #FFA56C);
-      display: flex; align-items: center; justify-content: center;
-      color: #0A0B0E; font-weight: 800; font-size: 12px;
-      letter-spacing: 0.04em; margin-bottom: 12px;
+      display: block;
+      object-fit: cover;        /* logo fills the slot, slight crop is fine */
+      background: #E8ECF1;      /* matches the logo's own light backdrop */
+      margin-bottom: 12px;
+      cursor: default;
     }
     .sidebar-item {
       width: 36px; height: 36px;
