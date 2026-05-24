@@ -29,11 +29,11 @@ export function OverviewPage({ data, setRoute }: Props) {
       {/* Row 1: KPIs full width */}
       <div
         className="widget w-12"
-        title="ADI's six headline numbers. Mcap is the public token cap (price × circulating). TVL is the dollar value on ADI Chain, including $33.2M of DDSC stablecoin verified live via RPC. FDV is fully-diluted. Mcap/TVL and FDV/TVL show how expensive the token is vs real usage; healthy L2 range is 0.3-5×. Turnover is 24h volume / Mcap; below 1%/day is conventionally illiquid."
+        title="Mcap = price × circulating · TVL on-chain incl. DDSC · FDV = price × max supply · M/T and FDV/T ratios (healthy L2 range 0.3-5×) · 24h turnover (below 1% = illiquid)"
       >
         <div className="widget-head">
           <span className="widget-title">ADI · key metrics</span>
-          <span className="widget-meta">On-chain · verified · hover header to learn</span>
+          <span className="widget-meta">on-chain · verified {data.asOf}</span>
         </div>
         <div className="widget-body">
           <div className="stat-row" style={{ justifyContent: 'space-between' }}>
@@ -50,11 +50,11 @@ export function OverviewPage({ data, setRoute }: Props) {
       {/* Row 2: TVL composition + Where ADI sits */}
       <div
         className="widget w-6"
-        title="What makes up ADI's $35.2M TVL. The Uniswap LP figure is what DefiLlama indexes today. The DDSC figure is the on-chain totalSupply() of the CBUAE-licensed DDSC stablecoin (1 DDSC = 1 AED, reserves at FAB), converted to USD at the 3.6725 peg."
+        title="Uniswap V3 LP: DefiLlama-indexed · DDSC: on-chain totalSupply() via rpc.adifoundation.ai, peg 3.6725 AED/USD, reserves at FAB"
       >
         <div className="widget-head">
           <span className="widget-title">TVL composition</span>
-          <span className="widget-meta">rpc.adifoundation.ai · hover to learn</span>
+          <span className="widget-meta">rpc.adifoundation.ai · eth_call totalSupply()</span>
         </div>
         <div className="widget-body flush">
           <table className="data-table">
@@ -73,7 +73,7 @@ export function OverviewPage({ data, setRoute }: Props) {
 
       <div
         className="widget w-6"
-        title="Plain-English read of where ADI lands across the L2 universe, side-by-side under both lenses."
+        title="ADI position vs cohort medians + nearest peers, under both Mcap and FDV lenses"
       >
         <div className="widget-head">
           <span className="widget-title">Where ADI sits</span>
@@ -131,7 +131,7 @@ export function OverviewPage({ data, setRoute }: Props) {
       {/* Row 3: Holder concentration comparison, ADI vs peer cohort */}
       <div
         className="widget w-12"
-        title="Top-10 wallets concentration as a % of supply. Higher = more centralised. 14/17 L2 tokens are live from Moralis erc20/owners (indexed view, one call per token, returns top holders sorted with pre-computed % of supply). Scroll, Blast, BOB keep manually-seeded values since Moralis does not index those chains. ADI's 99.28% comes from the audit document. Bridge / treasury contracts are counted as holders, for chains like Linea (97.6% in TokenBridge) or Metis (65% in Bridge) the apparent concentration reflects unbridged supply rather than whale wallets; hover the row to see the top-holder label."
+        title="Top-10 wallet concentration (% supply) · 14/17 live via Moralis erc20/owners · Scroll/Blast/BOB seeded · ADI from audit · bridge/treasury contracts count as holders (Linea 97.6% in TokenBridge, Metis 65% in Bridge)"
       >
         <div className="widget-head">
           <span className="widget-title">Holder concentration · top 10 wallets</span>

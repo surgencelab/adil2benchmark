@@ -13,8 +13,8 @@ export function MethodologyPage({ data }: Props) {
     <>
       <div className="page-header">
         <div className="page-eyebrow">Methodology</div>
-        <h1 className="page-title">How we built every number on this dashboard</h1>
-        <p className="page-sub">Every cell on the L2 Universe table, every dot on the scatter, and every line in the Report traces back to one of the sources listed here. The intent is that a reviewer can reproduce any value with the listed endpoint and a free API key.</p>
+        <h1 className="page-title">Methodology · Sources, Formulas, Caveats</h1>
+        <p className="page-sub">Every cell on this dashboard traces to a source below. Reproducible from the listed endpoint + a free API key.</p>
       </div>
 
       <div className="report-stack">
@@ -26,14 +26,11 @@ export function MethodologyPage({ data }: Props) {
             <span>Surgence Labs · ADI Foundation Audit · {data.asOf}</span>
           </div>
 
-          <h2 className="report-h1">Sources we pull from</h2>
           <p className="report-lede">
-            Five external APIs plus one ADI-native RPC. Each fetcher script writes
-            to <code className="inline">/tmp/*.json</code>; <code className="inline">scripts/refresh_all.py</code> merges
-            them into <code className="inline">public/data.json</code> which the React app reads on load.
+            Five external APIs + one ADI-native RPC. Fetchers write to <code className="inline">/tmp/*.json</code>; <code className="inline">scripts/refresh_all.py</code> merges into <code className="inline">public/data.json</code> consumed by the React app on load.
           </p>
 
-          <h3 className="report-h2"><span className="num">01</span>DefiLlama, chain TVL, token Mcap, DEX volume</h3>
+          <h3 className="report-h2">DefiLlama, chain TVL, token Mcap, DEX volume</h3>
           <p className="report-p">
             Free, no API key. Endpoints used:
           </p>
@@ -48,7 +45,7 @@ export function MethodologyPage({ data }: Props) {
             from on-chain calls. We do not re-verify their adapter outputs per chain.
           </p>
 
-          <h3 className="report-h2"><span className="num">02</span>CoinGecko, FDV, max supply, 30d sparklines</h3>
+          <h3 className="report-h2">CoinGecko, FDV, max supply, 30d sparklines</h3>
           <p className="report-p">
             Free public API, no key. Endpoints used:
           </p>
@@ -61,7 +58,7 @@ export function MethodologyPage({ data }: Props) {
             Five chains have no CG coverage (Cyber, Swellchain, Polynomial, GateLayer, MegaETH), their FDV / token-price cells show "–".
           </p>
 
-          <h3 className="report-h2"><span className="num">03</span>Growthepie, tx/day, daily active wallets, fees, stables</h3>
+          <h3 className="report-h2">Growthepie, tx/day, daily active wallets, fees, stables</h3>
           <p className="report-p">
             Free public API, no key. One call per chain:
           </p>
@@ -80,7 +77,7 @@ export function MethodologyPage({ data }: Props) {
             DAA is ~6K; a single-day spike to 31K we observed during testing is one such artifact.
           </p>
 
-          <h3 className="report-h2"><span className="num">04</span>Moralis, top-10 holder concentration</h3>
+          <h3 className="report-h2">Moralis, top-10 holder concentration</h3>
           <p className="report-p">
             Requires an API key (free tier 40K compute units/day). Single endpoint:
           </p>
@@ -99,7 +96,7 @@ export function MethodologyPage({ data }: Props) {
             not yet index those chains. Each row's tooltip shows its actual source.
           </p>
 
-          <h3 className="report-h2"><span className="num">05</span>ADI RPC + ADI Explorer, DDSC and IHC verification</h3>
+          <h3 className="report-h2">ADI RPC + ADI Explorer, DDSC and IHC verification</h3>
           <p className="report-p">
             Direct on-chain reads against ADI Foundation's own infrastructure.
             No third-party intermediary, these are the proof points.
@@ -117,13 +114,11 @@ export function MethodologyPage({ data }: Props) {
             <span>Formulas + worked examples</span>
           </div>
 
-          <h2 className="report-h1">Computations</h2>
           <p className="report-lede">
-            Every derived field has a single deterministic formula. Worked examples
-            below use ADI's own numbers so each value matches what you see on the dashboard today.
+            Every derived field uses a single deterministic formula. Worked examples below use ADI's live numbers, so each value matches the dashboard exactly.
           </p>
 
-          <h3 className="report-h2"><span className="num">01</span>Mcap / TVL and FDV / TVL</h3>
+          <h3 className="report-h2">Mcap / TVL and FDV / TVL</h3>
           <p className="report-p">
             Direct ratios. We surface both because Mcap (circulating × price) and FDV
             (max supply × price) tell different stories, the team prefers FDV because it
@@ -134,7 +129,7 @@ export function MethodologyPage({ data }: Props) {
             <li><code className="inline">fdv_tvl  = fdv_usd ÷ chain_tvl</code></li>
           </ul>
 
-          <h3 className="report-h2"><span className="num">02</span>DDSC AED → USD conversion</h3>
+          <h3 className="report-h2">DDSC AED → USD conversion</h3>
           <p className="report-p">
             DDSC is pegged 1:1 to UAE Dirham (AED). To compare against USD-denominated
             TVL we apply the fixed peg <code className="inline">{adi.ddsc_aed_per_usd} AED/USD</code>:
@@ -145,7 +140,7 @@ export function MethodologyPage({ data }: Props) {
             <li>Current values: <b>{adi.ddsc_tvl_aed.toLocaleString()} DDSC</b> ÷ {adi.ddsc_aed_per_usd} = <b>${adi.ddsc_tvl_usd.toLocaleString(undefined, { maximumFractionDigits: 0 })} USD</b></li>
           </ul>
 
-          <h3 className="report-h2"><span className="num">03</span>TVL with DDSC (on-chain view)</h3>
+          <h3 className="report-h2">TVL with DDSC (on-chain view)</h3>
           <p className="report-p">
             DefiLlama's adapter for ADI Chain does not index DDSC yet. The
             on-chain view adds the live verified supply:
@@ -156,7 +151,7 @@ export function MethodologyPage({ data }: Props) {
             <li><code className="inline">mcaptvl_with_ddsc = token_mcap ÷ tvl_with_ddsc</code></li>
           </ul>
 
-          <h3 className="report-h2"><span className="num">04</span>Tier bucketing</h3>
+          <h3 className="report-h2">Tier bucketing</h3>
           <p className="report-p">
             All peer L2s are sorted by current TVL (descending), then sliced:
           </p>
@@ -173,7 +168,7 @@ export function MethodologyPage({ data }: Props) {
             from the dataset's <code className="inline">asOf</code> date.
           </p>
 
-          <h3 className="report-h2"><span className="num">05</span>Cohort medians (airdrop vs non-airdrop vs no-token)</h3>
+          <h3 className="report-h2">Cohort medians (airdrop vs non-airdrop vs no-token)</h3>
           <p className="report-p">
             Each L2 is classified into one of three cohorts (see Page 3 for the rules).
             For each cohort we compute the median of these metrics across its members:
@@ -182,7 +177,7 @@ export function MethodologyPage({ data }: Props) {
             same lifecycle stage, no inflated DAA from airdrop-day spikes.
           </p>
 
-          <h3 className="report-h2"><span className="num">06</span>Top-10 holder concentration</h3>
+          <h3 className="report-h2">Top-10 holder concentration</h3>
           <p className="report-p">
             For each tracked token, sum the percentages of the 10 largest non-sink holders:
           </p>
@@ -206,15 +201,11 @@ export function MethodologyPage({ data }: Props) {
             <span>How we tag distribution model + audit views</span>
           </div>
 
-          <h2 className="report-h1">Distribution model classification</h2>
           <p className="report-lede">
-            Every L2 row carries a <code className="inline">distribution_model</code> tag.
-            These are <b>manually classified</b> by us from each token's public history,
-            not pulled from any API. The full per-row tagging is in <code className="inline">public/data.json</code>;
-            the rules we used to assign them are below.
+            Every L2 row carries a <code className="inline">distribution_model</code> tag, <b>manually classified</b> from each token's public history (not pulled from any API). Per-row tagging in <code className="inline">public/data.json</code>; rules below.
           </p>
 
-          <h3 className="report-h2"><span className="num">01</span>airdrop</h3>
+          <h3 className="report-h2">airdrop</h3>
           <p className="report-p">
             Token launched in 2021+ with a defined airdrop event to early users / bridgers / testnet
             participants. Most modern L2s (Arbitrum, Optimism, ZKsync, Starknet, Linea, Scroll,
@@ -222,7 +213,7 @@ export function MethodologyPage({ data }: Props) {
             not equal-opportunity buying.
           </p>
 
-          <h3 className="report-h2"><span className="num">02</span>fair_launch</h3>
+          <h3 className="report-h2">fair_launch</h3>
           <p className="report-p">
             Token issued at <b>one publicly-known price, simultaneously available to all
             participants</b>, with no insider allocation, no team vesting cliff, no investor
@@ -235,7 +226,7 @@ export function MethodologyPage({ data }: Props) {
             <li><b>Metis</b> (2021), Polis token swap, no pre-mine, no VC round</li>
           </ul>
 
-          <h3 className="report-h2"><span className="num">03</span>token_swap</h3>
+          <h3 className="report-h2">token_swap</h3>
           <p className="report-p">
             Current token isn't a fresh launch, holders inherited it via 1:1 conversion
             from a predecessor token. No new distribution event, no new opportunity for outsiders.
@@ -246,13 +237,13 @@ export function MethodologyPage({ data }: Props) {
             <li><b>Cronos zkEVM (ZKCRO)</b>, Cronos chain's CRO distribution mirrored to ZKCRO; Crypto.com dominant</li>
           </ul>
 
-          <h3 className="report-h2"><span className="num">04</span>no_token</h3>
+          <h3 className="report-h2">no_token</h3>
           <p className="report-p">
             Chain has no native gas / governance token yet. Common for younger L2s that have
             signalled an airdrop is coming but haven't TGE'd (Base, MegaETH, Ink, Unichain, Abstract, etc.).
           </p>
 
-          <h3 className="report-h2"><span className="num">05</span>private_only</h3>
+          <h3 className="report-h2">private_only</h3>
           <p className="report-p">
             Token exists but was distributed only through private / strategic rounds, no
             public sale, no broad airdrop. ADI Chain itself falls here, distribution is
@@ -282,10 +273,8 @@ export function MethodologyPage({ data }: Props) {
             <span>What we do not measure</span>
           </div>
 
-          <h2 className="report-h1">Refresh cadence</h2>
           <p className="report-lede">
-            All numbers update via one entry-point script that chains the fetchers and
-            merges into <code className="inline">public/data.json</code>. Two trigger paths:
+            One entry-point script chains the fetchers and merges into <code className="inline">public/data.json</code>. Two trigger paths:
           </p>
           <ul className="report-list">
             <li><b>GitHub Action</b> (<code className="inline">.github/workflows/refresh-data.yml</code>), manual trigger from the Actions tab. Runs all fetchers, commits the refreshed JSON, pushes to <code className="inline">main</code>. Vercel auto-redeploys on push. Full cycle ~5 minutes.</li>
@@ -299,47 +288,47 @@ export function MethodologyPage({ data }: Props) {
             holder values, the rest of the dashboard refreshes normally.
           </p>
 
-          <h2 className="report-h1" style={{ marginTop: 28 }}>What we do not measure (caveats)</h2>
+          <h2 className="report-h1" style={{ marginTop: 28 }}>Caveats</h2>
           <p className="report-lede">
-            Where the numbers stop being trustworthy and what would be required to close each gap.
+            Where the numbers stop being trustworthy, and what would close each gap.
           </p>
 
-          <h3 className="report-h2"><span className="num">01</span>Daily-active-wallets is a single-day snapshot</h3>
+          <h3 className="report-h2">Daily-active-wallets is a single-day snapshot</h3>
           <p className="report-p">
             Growthepie publishes a daily series; we display the latest value. A 7-day rolling
             average would smooth spikes (e.g. quest days, airdrop campaigns). We have not
             implemented that yet.
           </p>
 
-          <h3 className="report-h2"><span className="num">02</span>Bridge / treasury contracts count as holders</h3>
+          <h3 className="report-h2">Bridge / treasury contracts count as holders</h3>
           <p className="report-p">
             By design, but worth knowing. Linea's 99% top-10 is 97.6% in the canonical TokenBridge
             proxy, that's unbridged supply, not concentrated whales. The tooltip surfaces the
             top-holder label, but the chart bar still reads "99%."
           </p>
 
-          <h3 className="report-h2"><span className="num">03</span>Three chains keep manually-seeded holder values</h3>
+          <h3 className="report-h2">Three chains keep manually-seeded holder values</h3>
           <p className="report-p">
             Scroll, Blast, BOB, Moralis does not index those chains. We use the figure from
             each chain's public Etherscan / Blockscout "Token Holders" page, refreshed by hand
             quarterly. The row's <code className="inline">top10_pct_source</code> field shows whether the value is live or seeded.
           </p>
 
-          <h3 className="report-h2"><span className="num">04</span>We do not re-verify DefiLlama's TVL per protocol</h3>
+          <h3 className="report-h2">We do not re-verify DefiLlama's TVL per protocol</h3>
           <p className="report-p">
             DefiLlama's protocol-level adapter outputs are taken as ground truth. We do not
             independently sum bridge balances, lending-pool deposits, or LP TVL per chain.
             The ADI exception is the only place we go to the underlying RPC directly (to verify DDSC).
           </p>
 
-          <h3 className="report-h2"><span className="num">05</span>Distribution-model tags are our manual judgment</h3>
+          <h3 className="report-h2">Distribution-model tags are our manual judgment</h3>
           <p className="report-p">
             No API publishes "this token was a fair launch" as a structured field, that's our
             classification from each token's public history. Tags should be reviewed before
             being cited externally. Page 3 lists the per-tag definitions.
           </p>
 
-          <h3 className="report-h2"><span className="num">06</span>Activity columns are missing for 26 long-tail chains</h3>
+          <h3 className="report-h2">Activity columns are missing for 26 long-tail chains</h3>
           <p className="report-p">
             Growthepie only tracks 31 L2s. The 26 chains in our table without DAA / tx /
             fees data (Cyber, Swellchain, Polynomial, Pepu, Moonchain, Matchain, Mind Network,
