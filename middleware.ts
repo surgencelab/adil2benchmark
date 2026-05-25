@@ -4,9 +4,13 @@
  * Runs at the Vercel CDN layer before any static asset is served, so
  * unauthenticated requests never reach the React bundle or public/data.json.
  *
- * Username is fixed: `adi`. Password defaults to the value baked here for
- * convenience; override with the DASHBOARD_PASSWORD env var on Vercel
- * (Project Settings → Environment Variables) to rotate without a code push.
+ * REQUIRED ENV VARS (set in Vercel → Project Settings → Environment Variables):
+ *   DASHBOARD_PASSWORD   the password the team uses to sign in
+ *   DASHBOARD_USERNAME   optional, defaults to "adi"
+ *
+ * No password is baked into source. If DASHBOARD_PASSWORD is unset the
+ * middleware fails closed with a 503, so a misconfiguration cannot
+ * accidentally publish the dashboard.
  */
 
 export const config = {
@@ -15,12 +19,20 @@ export const config = {
 };
 
 const REALM = 'ADI L2 Benchmark';
-const USER = 'adi';
-const DEFAULT_PASSWORD = 'ADSURL2#';
 
 export default function middleware(request: Request): Response | undefined {
-  const password = (globalThis as any).process?.env?.DASHBOARD_PASSWORD || DEFAULT_PASSWORD;
-  const expected = 'Basic ' + btoa(`${USER}:${password}`);
+  const env = (globalThis as any).process?.env ?? {};
+  const password = env.DASHBOARD_PASSWORD;
+  const user = env.DASHBOARD_USERNAME || 'adi';
+
+  if (!password) {
+    return new Response(
+      'Dashboard misconfigured: DASHBOARD_PASSWORD env var is not set on this deployment.',
+      { status: 503, headers: { 'content-type': 'text/plain' } },
+    );
+  }
+
+  const expected = 'Basic ' + btoa(`${user}:${password}`);
   const provided = request.headers.get('authorization');
 
   if (provided === expected) {
