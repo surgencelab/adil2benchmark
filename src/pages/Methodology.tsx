@@ -55,7 +55,7 @@ export function MethodologyPage({ data }: Props) {
           </ul>
           <p className="report-p">
             The mapping from dashboard chain name → CoinGecko slug lives in <code className="inline">scripts/fetch_activity.py</code>.
-            Five chains have no CG coverage (Cyber, Swellchain, Polynomial, GateLayer, MegaETH), their FDV / token-price cells show "–".
+            Five chains have no CG coverage (Cyber, Swellchain, Polynomial, GateLayer, MegaETH); their FDV / token-price cells show "–".
           </p>
 
           <h3 className="report-h2">Growthepie, tx/day, daily active wallets, fees, stables</h3>
@@ -277,8 +277,8 @@ export function MethodologyPage({ data }: Props) {
             One entry-point script chains the fetchers and merges into <code className="inline">public/data.json</code>. Two trigger paths:
           </p>
           <ul className="report-list">
-            <li><b>GitHub Action</b> (<code className="inline">.github/workflows/refresh-data.yml</code>), manual trigger from the Actions tab. Runs all fetchers, commits the refreshed JSON, pushes to <code className="inline">main</code>. Vercel auto-redeploys on push. Full cycle ~5 minutes.</li>
-            <li><b>Local dev</b> (<code className="inline">npm run dev</code>), Vite middleware exposes <code className="inline">POST /api/refresh</code> which spawns the same Python pipeline. The dashboard's "↻ Refresh" button calls this.</li>
+            <li><b>GitHub Action</b> (<code className="inline">.github/workflows/refresh-data.yml</code>): manual trigger from the Actions tab. Runs all fetchers, commits the refreshed JSON, pushes to <code className="inline">main</code>. Vercel auto-redeploys on push. Full cycle ~5 minutes.</li>
+            <li><b>Local dev</b> (<code className="inline">npm run dev</code>): Vite middleware exposes <code className="inline">POST /api/refresh</code> which spawns the same Python pipeline. The dashboard's "↻ Refresh" button calls this.</li>
           </ul>
           <p className="report-p">
             Two API keys are required for the full refresh to run end-to-end:

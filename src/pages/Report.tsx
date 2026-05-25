@@ -154,7 +154,7 @@ export function ReportPage({ data }: Props) {
 
           <h3 className="report-h2">What cannot be fixed with narrative</h3>
           <p className="report-p">
-            Float concentration. With live Moralis numbers across {livePeerCount} L2 tokens, ADI's <b>99.28%</b> top-10 is the highest reading on the board, above bridge-locked Linea (99.3%, 97.6% in TokenBridge) and Metis (84%, 65% in Andromeda Bridge). Apples-to-apples comparators ({cleanPeers.map((p) => `${p.name} ${p.pct.toFixed(0)}%`).join(', ')}) sit at roughly half ADI's level.
+            Float concentration. With live Moralis numbers across {livePeerCount} L2 tokens, ADI's <b>99.28%</b> top-10 is the highest reading on the board: above bridge-locked Linea (99.3%, of which 97.6% sits in the TokenBridge) and Metis (84%, of which 65% sits in the Andromeda Bridge). Apples-to-apples comparators ({cleanPeers.map((p) => `${p.name} ${p.pct.toFixed(0)}%`).join(', ')}) sit at roughly half ADI's level.
           </p>
           <p className="report-p">
             Structural, not narrative. Float needs distribution events. Two-quarter workplan, in parallel: <b>(a)</b> submit DefiLlama adapters (TVL + DEX); <b>(b)</b> continue DDSC issuance growth, the IHC flow shows institutional appetite is real; <b>(c)</b> begin staged distribution events to dilute the top-10. (a) and (b) are this-quarter work. (c) is the slowest line item.
