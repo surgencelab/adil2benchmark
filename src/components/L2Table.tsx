@@ -72,7 +72,25 @@ export function L2Table({ rows, adi, openDetail }: Props) {
         <td className="right">{mcaptvl == null ? '-' : <span className={mcaptvl > 50 ? 'danger' : ''}>{fmtX(mcaptvl)}</span>}</td>
         <td className="right">{fdvtvl == null ? '-' : <span className={fdvtvl > 100 ? 'danger' : ''}>{fmtX(fdvtvl)}</span>}</td>
         <td className="right">{fmtNum(r.tx_per_day)}</td>
-        <td className="right">{fmtNum(r.active_wallets_per_day)}</td>
+        <td className="right" title={(() => {
+          const single = r.active_wallets_per_day;
+          const hist = r.daa_history;
+          if (!hist || hist.length === 0) return single ? `Growthepie latest single-day: ${Math.round(single).toLocaleString()}` : 'Not tracked by Growthepie';
+          const last7 = hist.slice(-7).filter((v): v is number => v != null);
+          if (!last7.length) return single ? `single-day: ${Math.round(single).toLocaleString()}` : '';
+          const avg = last7.reduce((s, v) => s + v, 0) / last7.length;
+          return `7d avg (Growthepie): ${Math.round(avg).toLocaleString()} · latest single-day: ${single ? Math.round(single).toLocaleString() : '-'}`;
+        })()}>
+          {(() => {
+            const hist = r.daa_history;
+            const last7 = hist ? hist.slice(-7).filter((v): v is number => v != null) : [];
+            if (last7.length >= 3) {
+              const avg = last7.reduce((s, v) => s + v, 0) / last7.length;
+              return fmtNum(avg);
+            }
+            return fmtNum(r.active_wallets_per_day);
+          })()}
+        </td>
         <td className="right">{fmtUSD(dex, 2)}</td>
         <td className="right">{voltvl == null ? '-' : <span className={voltvl === 0 ? 'danger' : ''}>{fmtPct(voltvl)}</span>}</td>
         <td className="right" title={r.top10_pct_note || ''}>
@@ -102,7 +120,7 @@ export function L2Table({ rows, adi, openDetail }: Props) {
             <th className="right">Mcap / TVL</th>
             <th className="right">FDV / TVL</th>
             <th className="right">Tx / day</th>
-            <th className="right">Active wallets</th>
+            <th className="right" title="Daily active wallets · 7-day rolling average from Growthepie (smooths quest-day / airdrop spikes). Falls back to latest single-day where 7-day history is unavailable. '-' = chain not tracked by Growthepie. Hover any cell for exact 7d avg and latest single-day side by side.">Active wallets · 7d</th>
             <th className="right">24h DEX</th>
             <th className="right">Vol / TVL</th>
             <th className="right" title="Concentration: % of supply held by the top 10 wallets. Higher = more centralised (red >90%, yellow >70%). 14/17 L2 tokens live from Moralis erc20/owners (indexed view, one call per token, pre-computed % of supply). Scroll, Blast, BOB keep manually-seeded values from Etherscan's public Token Holders page since Moralis does not index those chains. Bridge / treasury contracts count as holders, Linea 99% and Metis 84% reflect unbridged supply locked in the chain's bridge, not whale concentration. Hover any cell for per-row source + top-holder label.">Top 10 %</th>
