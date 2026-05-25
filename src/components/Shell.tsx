@@ -237,7 +237,7 @@ export function MetricToggle({ metric, setMetric }: { metric: Metric; setMetric:
           padding: '3px 9px', fontFamily: 'var(--font-mono)',
           fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          background: metric === 'mcap' ? 'rgba(255,139,77,0.12)' : 'transparent',
+          background: metric === 'mcap' ? 'rgba(212,169,60,0.12)' : 'transparent',
           color: metric === 'mcap' ? 'var(--accent-orange)' : 'var(--text-muted)',
           border: 'none', cursor: 'pointer',
         }}
@@ -248,7 +248,7 @@ export function MetricToggle({ metric, setMetric }: { metric: Metric; setMetric:
           padding: '3px 9px', fontFamily: 'var(--font-mono)',
           fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          background: metric === 'fdv' ? 'rgba(255,139,77,0.12)' : 'transparent',
+          background: metric === 'fdv' ? 'rgba(212,169,60,0.12)' : 'transparent',
           color: metric === 'fdv' ? 'var(--accent-orange)' : 'var(--text-muted)',
           border: 'none', borderLeft: '1px solid var(--border-bright)', cursor: 'pointer',
         }}

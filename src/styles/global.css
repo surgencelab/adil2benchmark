@@ -21,12 +21,17 @@
       --tint-soft:     rgba(255,255,255,0.04);
       --tint-medium:   rgba(255,255,255,0.06);
       --tint-strong:   rgba(255,255,255,0.20);
-      /* Brand accents, calibrated for dark surface */
-      --accent-orange: #FF8B4D;
-      --accent-red:    #FF5A5F;
+      /* Single institutional accent (Bloomberg amber family).
+         --accent-orange is kept as an alias for back-compat with the
+         many call sites that already reference it; it now points to
+         the same amber tone. Green/red are reserved strictly for
+         up/down deltas. Yellow is used only for explicit "warn" states. */
+      --accent:        #D4A93C;
+      --accent-orange: #D4A93C;
+      --accent-red:    #E0524A;
+      --accent-green:  #4FAE6F;
+      --accent-yellow: #D4A93C;
       --accent-blue:   #4F7CFF;
-      --accent-green:  #2ECC71;
-      --accent-yellow: #F5B544;
       --accent-purple: #B266FF;
       --accent-cyan:   #00CFE8;
       /* Fonts */
@@ -48,12 +53,13 @@
       --tint-soft:     rgba(15,17,21,0.03);
       --tint-medium:   rgba(15,17,21,0.06);
       --tint-strong:   rgba(15,17,21,0.20);
-      /* Accents tuned for white surface (slightly darker for AA contrast) */
-      --accent-orange: #E55A1F;
-      --accent-red:    #D6322E;
+      /* Accents tuned for white surface (darker amber for AA contrast) */
+      --accent:        #A57B17;
+      --accent-orange: #A57B17;
+      --accent-red:    #C0392B;
+      --accent-green:  #1D8A4F;
+      --accent-yellow: #A57B17;
       --accent-blue:   #3B5FE0;
-      --accent-green:  #0F9D58;
-      --accent-yellow: #D97706;
       --accent-purple: #9B4AE0;
       --accent-cyan:   #0090B2;
     }
@@ -73,7 +79,7 @@
     /* ─── Scrollbar (thin, like the SDK) ─── */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: var(--background); }
-    ::-webkit-scrollbar-thumb { background: rgba(15,17,21,0.15); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: rgba(15,17,21,0.15); border-radius: 2px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(15,17,21,0.25); }
 
     /* ════════════════════════════════════════════════════════════════
@@ -98,7 +104,7 @@
     }
     .sidebar-brand {
       width: 36px; height: 36px;
-      border-radius: 6px;
+      border-radius: 2px;
       display: block;
       object-fit: cover;        /* logo fills the slot, slight crop is fine */
       background: #E8ECF1;      /* matches the logo's own light backdrop */
@@ -108,18 +114,18 @@
     .sidebar-item {
       width: 36px; height: 36px;
       display: flex; align-items: center; justify-content: center;
-      border-radius: 6px;
+      border-radius: 2px;
       cursor: pointer; position: relative;
       color: var(--text-muted);
       transition: color .12s ease, background .12s ease;
     }
     .sidebar-item:hover {
       color: var(--accent-orange);
-      background: rgba(255,139,77,0.08);
+      background: rgba(212,169,60,0.08);
     }
     .sidebar-item.active {
       color: var(--accent-orange);
-      background: rgba(255,139,77,0.12);
+      background: rgba(212,169,60,0.12);
     }
     .sidebar-item.active::before {
       content: ""; position: absolute; left: -10px; top: 8px; bottom: 8px;
@@ -128,7 +134,7 @@
     .sidebar-item .tip {
       position: absolute; left: 48px; top: 50%; transform: translateY(-50%);
       background: var(--card); color: var(--foreground);
-      padding: 4px 10px; border-radius: 3px;
+      padding: 4px 10px; border-radius: 2px;
       font-family: var(--font-mono); font-size: 11px;
       letter-spacing: 0.06em; white-space: nowrap;
       opacity: 0; pointer-events: none; transition: opacity .12s ease;
@@ -160,8 +166,8 @@
     .status-bar { grid-area: statusbar; }
     .brand-cluster { display: flex; align-items: center; gap: 12px; }
     .brand-icon {
-      width: 22px; height: 22px; border-radius: 3px;
-      background: linear-gradient(135deg, var(--accent-orange), #FF8A5C);
+      width: 22px; height: 22px; border-radius: 2px;
+      background: var(--border);
       display: inline-flex; align-items: center; justify-content: center;
       color: #fff; font-weight: 700; font-size: 11px; letter-spacing: 0.04em;
     }
@@ -175,7 +181,7 @@
     .nav-link {
       padding: 5px 10px; font-size: 10px;
       text-transform: uppercase; letter-spacing: 0.1em;
-      color: var(--text-muted); border-radius: 3px;
+      color: var(--text-muted); border-radius: 2px;
       border-bottom: 1px solid transparent;
       transition: color .12s ease, background .12s ease, border-color .12s ease;
       cursor: pointer;
@@ -183,7 +189,7 @@
     .nav-link:hover { color: var(--foreground); }
     .nav-link.active {
       color: var(--accent-orange);
-      background: rgba(255,107,53,0.08);
+      background: rgba(212,169,60,0.08);
       border-bottom: 1px solid var(--accent-orange);
     }
     .live-pill {
@@ -196,7 +202,7 @@
       font-size: 10px; color: var(--text-muted);
       text-transform: uppercase; letter-spacing: 0.1em;
       padding: 4px 10px; border: 1px solid var(--border-bright);
-      border-radius: 3px; background: var(--card);
+      border-radius: 2px; background: var(--card);
       cursor: pointer; transition: all .15s ease;
       font-family: var(--font-mono);
     }
@@ -216,22 +222,22 @@
     .time-pill {
       padding: 4px 10px; font-size: 10px;
       text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
-      border: 1px solid var(--border); border-radius: 3px;
+      border: 1px solid var(--border); border-radius: 2px;
       background: transparent; color: var(--text-muted);
       cursor: pointer; transition: all .15s ease;
       font-family: var(--font-mono);
     }
     .time-pill:hover { border-color: var(--border-bright); color: var(--foreground); }
-    .time-pill.active { border-color: var(--accent-orange); color: var(--accent-orange); background: rgba(255,107,53,0.08); }
+    .time-pill.active { border-color: var(--accent-orange); color: var(--accent-orange); background: rgba(212,169,60,0.08); }
     .chart-actions { display: flex; gap: 4px; align-items: center; }
     .chart-action-btn {
       display: inline-flex; align-items: center; justify-content: center;
       width: 26px; height: 26px;
-      border: 1px solid var(--border); border-radius: 3px;
+      border: 1px solid var(--border); border-radius: 2px;
       background: transparent; color: var(--text-muted); cursor: pointer;
       transition: all .15s ease;
     }
-    .chart-action-btn:hover { border-color: var(--accent-orange); color: var(--accent-orange); background: rgba(255,107,53,0.06); }
+    .chart-action-btn:hover { border-color: var(--accent-orange); color: var(--accent-orange); background: rgba(212,169,60,0.06); }
     .chart-actions-sep { width: 1px; height: 14px; background: var(--border); margin: 0 4px; }
     .chart-canvas {
       position: relative;
@@ -271,20 +277,12 @@
     .report-page {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 48px 56px 56px;
+      border-radius: 0;
+      padding: 44px 52px 52px;
       position: relative;
-      overflow: hidden;
       max-width: 920px;
       margin: 0 auto;
       width: 100%;
-    }
-    .report-page::before {
-      content: "";
-      position: absolute; top: 0; left: 0; right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
-      opacity: 0.45;
     }
     .report-meta {
       display: flex; justify-content: space-between; align-items: baseline;
@@ -378,7 +376,7 @@
       position: absolute;
       left: 2px; top: 11px;
       width: 6px; height: 6px;
-      border-radius: 50%;
+      border-radius: 2px%;
       background: var(--accent-orange);
       opacity: 0.7;
     }
@@ -450,16 +448,10 @@
     .widget {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 3px;
+      border-radius: 0;
       display: flex; flex-direction: column;
       min-height: 0;
       position: relative;
-    }
-    .widget::before {
-      content: ""; position: absolute; top: 0; left: 0; right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
-      opacity: 0.32;
     }
     .widget-head {
       display: flex; align-items: center; justify-content: space-between;
@@ -539,7 +531,7 @@
     .cmd-box {
       width: 560px; max-width: 90vw;
       background: var(--card); border: 1px solid var(--border-bright);
-      border-radius: 6px;
+      border-radius: 2px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.6);
     }
     .cmd-input {
@@ -553,12 +545,12 @@
     .cmd-list { padding: 6px; max-height: 360px; overflow: auto; }
     .cmd-item {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 8px 12px; cursor: pointer; border-radius: 3px;
+      padding: 8px 12px; cursor: pointer; border-radius: 2px;
       font-family: var(--font-mono); font-size: 12px;
       color: var(--foreground);
     }
     .cmd-item:hover, .cmd-item.active {
-      background: rgba(255,139,77,0.10);
+      background: rgba(212,169,60,0.10);
       color: var(--accent-orange);
     }
     .cmd-item .kbd {
@@ -571,7 +563,7 @@
       font-family: var(--font-mono); font-size: 10px;
       color: var(--text-muted); text-transform: uppercase;
       letter-spacing: 0.1em; padding: 4px 10px;
-      border: 1px solid var(--border); border-radius: 3px;
+      border: 1px solid var(--border); border-radius: 2px;
       background: var(--panel-header);
       cursor: pointer;
     }
@@ -589,13 +581,13 @@
     .position-read {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
       padding: 14px; background: var(--card);
-      border: 1px solid var(--border); border-radius: 4px;
+      border: 1px solid var(--border); border-radius: 2px;
       position: relative; overflow: hidden;
     }
     .position-read::before {
       content: ""; position: absolute; top: 0; left: 0; right: 0;
       height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      background: var(--border);
       opacity: 0.3;
     }
     .position-read .pr-cell {
@@ -620,7 +612,7 @@
     .nav-card {
       display: flex; flex-direction: column; gap: 6px;
       padding: 14px 16px;
-      background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 2px;
       cursor: pointer; transition: border-color .15s ease, transform .15s ease;
       position: relative; overflow: hidden;
     }
@@ -630,7 +622,7 @@
     .nav-card::before {
       content: ""; position: absolute; top: 0; left: 0; right: 0;
       height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      background: var(--border);
       opacity: 0.35;
     }
     .nav-card .nc-eyebrow {
@@ -669,7 +661,7 @@
       gap: 4px;
     }
     .heat-cell {
-      padding: 8px 10px; border-radius: 3px;
+      padding: 8px 10px; border-radius: 2px;
       font-family: var(--font-mono); font-size: 11px;
       display: flex; flex-direction: column; gap: 2px;
       cursor: pointer; position: relative;
@@ -715,7 +707,7 @@
     }
     .detail-close {
       background: transparent; border: 1px solid var(--border-bright);
-      color: var(--text-muted); width: 28px; height: 28px; border-radius: 4px;
+      color: var(--text-muted); width: 28px; height: 28px; border-radius: 2px;
       cursor: pointer; font-size: 14px;
     }
     .detail-close:hover { color: var(--accent-orange); border-color: var(--accent-orange); }
@@ -752,12 +744,12 @@
     .chart-expanded {
       position: fixed; inset: 24px; z-index: 100;
       background: var(--card); border: 1px solid var(--border-bright);
-      border-radius: 6px;
+      border-radius: 2px;
       display: flex; flex-direction: column;
       box-shadow: 0 20px 60px rgba(15,17,21,0.25);
     }
     .live-dot {
-      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      display: inline-block; width: 6px; height: 6px; border-radius: 2px%;
       background: var(--accent-orange);
       animation: pulse 1.6s ease-in-out infinite;
     }
@@ -787,7 +779,7 @@
     .tui-panel {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 4px;
+      border-radius: 2px;
       overflow: hidden;
       position: relative;
     }
@@ -795,7 +787,7 @@
       content: "";
       position: absolute; top: 0; left: 0; right: 0;
       height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      background: var(--border);
       opacity: 0.4;
     }
     .tui-panel-header {
@@ -866,7 +858,7 @@
     .counter {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 4px;
+      border-radius: 2px;
       padding: 10px 14px;
       position: relative;
       transition: border-color .15s ease, transform .15s ease;
@@ -875,7 +867,7 @@
       content: "";
       position: absolute; top: 0; left: 0; right: 0;
       height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      background: var(--border);
       opacity: 0.3;
     }
     .counter:hover { border-color: var(--border-bright); }
@@ -940,7 +932,7 @@
       display: inline-flex; align-items: center;
       padding: 2px 8px; font-size: 10px;
       text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
-      border: 1px solid var(--border-bright); border-radius: 3px;
+      border: 1px solid var(--border-bright); border-radius: 2px;
       color: var(--text-muted); background: var(--card);
     }
     .chip-large { color: var(--accent-green); border-color: rgba(15,157,88,0.4); background: rgba(15,157,88,0.06); }
@@ -955,7 +947,7 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-left: 3px solid var(--accent-red);
-      border-radius: 4px;
+      border-radius: 2px;
       padding: 18px 22px;
       font-size: 13px;
       line-height: 1.75;
@@ -984,7 +976,7 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-left: 3px solid var(--accent-green);
-      border-radius: 4px;
+      border-radius: 2px;
       padding: 18px 22px;
       font-family: var(--font-sans);
       font-size: 13.5px; line-height: 1.7;
@@ -1025,7 +1017,7 @@
       padding: 2px 10px; font-size: 10px;
       font-family: var(--font-mono); font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.08em;
-      border: 1px solid var(--accent-green); border-radius: 3px;
+      border: 1px solid var(--accent-green); border-radius: 2px;
       color: var(--accent-green); background: rgba(15,157,88,0.06);
     }
 
@@ -1040,7 +1032,7 @@
       display: inline-flex; align-items: center; gap: 6px;
       padding: 4px 10px;
       background: var(--card); border: 1px solid var(--border);
-      border-radius: 3px;
+      border-radius: 2px;
     }
     .meta-strip .kv .k {
       color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px;

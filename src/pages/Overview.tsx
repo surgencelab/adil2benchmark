@@ -62,7 +62,7 @@ export function OverviewPage({ data, setRoute }: Props) {
             <tbody>
               <tr><td>Uniswap V3 LP</td><td className="right">{fmtUSD(adi.tvl_defillama_visible)}</td><td className="muted">DefiLlama</td></tr>
               <tr><td>DDSC (1 AED peg, FAB)</td><td className="right">{fmtUSD(adi.ddsc_tvl_usd)}</td><td className="muted">eth_call</td></tr>
-              <tr style={{ background: 'rgba(255,139,77,0.08)', fontWeight: 600 }}>
+              <tr style={{ background: 'rgba(212,169,60,0.08)', fontWeight: 600 }}>
                 <td>Total</td><td className="right">{fmtUSD(adi.tvl_with_ddsc)}</td><td className="muted">sum</td>
               </tr>
               <tr><td className="muted">DefiLlama view (no DDSC)</td><td className="right" style={{ color: 'var(--accent-red)' }}>{fmtUSD(adi.tvl_defillama_visible)}</td><td className="muted">audit ref</td></tr>
@@ -89,8 +89,8 @@ export function OverviewPage({ data, setRoute }: Props) {
                 Tight float (~10% circulating) flatters the number.
               </div>
             </div>
-            <div className="pr-cell" style={{ background: 'rgba(255,139,77,0.04)', borderRadius: 3 }}>
-              <div className="pr-label" style={{ color: 'var(--accent-orange)' }}>FDV lens · client preferred</div>
+            <div className="pr-cell" style={{ background: 'rgba(212,169,60,0.06)' }}>
+              <div className="pr-label">FDV lens · client preferred</div>
               <div className="pr-value">
                 ADI's <b>FDV/TVL {fmtX(adiFDVTVL, 1)}</b> vs non-airdrop cohort median <b>{fmtX(C.NonAirdrop?.fdv_tvl_med, 2)}</b>.
                 That's <span className="danger">{(adiFDVTVL / (C.NonAirdrop?.fdv_tvl_med || 1)).toFixed(1)}× the cohort median</span>.
