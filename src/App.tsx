@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import type { L2Row, Route } from './data/types';
 import { useDataset, useTheme, useMetric, useGlobalShortcuts, useMediaQuery } from './lib/hooks';
-import { Sidebar, Ticker, TopBar, StatusBar, MainWrap, NAV } from './components/Shell';
+import { Sidebar, TopBar, StatusBar, MainWrap, NAV } from './components/Shell';
 import { CommandPalette } from './components/CommandPalette';
 import { DetailPane } from './components/DetailPane';
 import { OverviewPage } from './pages/Overview';
@@ -125,15 +125,13 @@ export default function App() {
     );
   }
 
-  const adi = data.adi;
   const activeLabel = NAV.find((n) => n.id === active)?.label || 'Overview';
 
   /* ─── Mobile layout: single column, no sidebar ──────── */
   if (isMobile) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <Ticker adi={adi} cohorts={data.cohorts} />
-        <TopBar
+          <TopBar
           activeLabel={activeLabel}
           onCmd={() => setCmdOpen(true)}
           asOf={data.asOf}
@@ -186,7 +184,6 @@ export default function App() {
         onToggleTheme={toggleTheme}
         theme={theme}
       />
-      <Ticker adi={adi} cohorts={data.cohorts} />
       <TopBar
         activeLabel={activeLabel}
         onCmd={() => setCmdOpen(true)}

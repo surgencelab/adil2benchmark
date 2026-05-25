@@ -83,9 +83,8 @@
       min-height: 100vh;
       display: grid;
       grid-template-columns: 56px 1fr;
-      grid-template-rows: 32px 36px 1fr 28px;
+      grid-template-rows: 36px 1fr 28px;
       grid-template-areas:
-        "sidebar ticker"
         "sidebar topnav"
         "sidebar main"
         "sidebar statusbar";
