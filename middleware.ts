@@ -13,6 +13,11 @@
  * accidentally publish the dashboard.
  */
 
+// Vercel's Edge runtime injects env vars at process.env at build time.
+// Declare the shape locally so we can use the idiomatic access without
+// pulling in @types/node for a non-Node runtime.
+declare const process: { env: Record<string, string | undefined> };
+
 export const config = {
   // Gate every path. The favicon is included; that's fine, it'll prompt once.
   matcher: '/(.*)',
@@ -21,14 +26,20 @@ export const config = {
 const REALM = 'ADI L2 Benchmark';
 
 export default function middleware(request: Request): Response | undefined {
-  const env = (globalThis as any).process?.env ?? {};
-  const password = env.DASHBOARD_PASSWORD;
-  const user = env.DASHBOARD_USERNAME || 'adi';
+  const password = process.env.DASHBOARD_PASSWORD;
+  const user = process.env.DASHBOARD_USERNAME || 'adi';
 
   if (!password) {
+    // Surface every env var name visible to the middleware so a missing
+    // configuration is debuggable from the response itself rather than
+    // requiring access to Vercel logs.
+    const visible = Object.keys(process.env || {}).sort().join(', ') || '(none)';
     return new Response(
-      'Dashboard misconfigured: DASHBOARD_PASSWORD env var is not set on this deployment.',
-      { status: 503, headers: { 'content-type': 'text/plain' } },
+      'Dashboard misconfigured: DASHBOARD_PASSWORD env var is not set on this deployment.\n\n' +
+      'Env vars visible to the Edge runtime on this build:\n  ' + visible + '\n\n' +
+      'Fix: add DASHBOARD_PASSWORD in Vercel → Project Settings → Environment Variables, ' +
+      'enable it for the Production environment, then trigger a redeploy.',
+      { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8' } },
     );
   }
 
