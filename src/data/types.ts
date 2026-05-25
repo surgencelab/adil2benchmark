@@ -51,6 +51,7 @@ export interface L2Row {
   price_usd_cg?: number | null;
   // Distribution metadata
   distribution_model?: DistributionModel;
+  distribution_note?: string;
   airdrop_pct_of_supply?: number;
   airdrop_distributed?: boolean;
   has_token?: boolean;

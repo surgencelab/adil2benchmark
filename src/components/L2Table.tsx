@@ -65,7 +65,7 @@ export function L2Table({ rows, adi, openDetail }: Props) {
       >
         <td>{r.name}</td>
         <td className="muted">{r.symbol || '-'}</td>
-        <td><DistChip kind={r.distribution_model} /></td>
+        <td title={r.distribution_note || ''}><DistChip kind={r.distribution_model} /></td>
         <td className="right">{fmtUSD(tvl)}</td>
         <td className="right">{fmtUSD(mcap)}</td>
         <td className="right">{fmtUSD(fdv)}</td>
