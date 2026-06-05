@@ -37,8 +37,6 @@ export function RwaPage({ data }: Props) {
     fdv_tvl: adi.fdv_usd && adi.tvl_with_ddsc ? adi.fdv_usd / adi.tvl_with_ddsc : null,
   };
 
-  const allRows = [adiAsRwa, ...rows];
-
   // Cohort medians across RWA peers (excluding ADI to avoid self-reference)
   const medTVL    = median(rows.map((r) => r.tvl as number));
   const medMcap   = median(rows.map((r) => r.token_mcap as number));
@@ -50,13 +48,12 @@ export function RwaPage({ data }: Props) {
     <>
       <div className="page-header">
         <div className="page-eyebrow">RWA</div>
-        <h1 className="page-title">ADI Chain vs RWA-Native L1 / L2 Cohort</h1>
-        <p className="page-sub">Strict RWA chain set ({rows.length} peers + ADI). TVL from DefiLlama, Mcap / FDV from CoinGecko. Cohort medians exclude ADI.</p>
+        <h1 className="page-title">ADI vs RWA-Native Chains</h1>
       </div>
 
-      <div className="widget w-12" style={{ marginBottom: 14 }}>
+      <div className="widget w-12">
         <div className="widget-head">
-          <span className="widget-title">RWA cohort table</span>
+          <span className="widget-title">RWA cohort</span>
           <span className="widget-meta">DefiLlama + CoinGecko · n={rows.length} peers</span>
         </div>
         <div className="widget-body flush">
@@ -124,23 +121,6 @@ export function RwaPage({ data }: Props) {
         </div>
       </div>
 
-      <div className="widget w-12">
-        <div className="widget-head">
-          <span className="widget-title">Read</span>
-          <span className="widget-meta">where ADI sits vs RWA peers</span>
-        </div>
-        <div className="widget-body">
-          <p className="report-p" style={{ marginBottom: 8 }}>
-            <b>TVL ranking.</b> In the strict RWA-native cohort, ADI's <b>{fmtUSD(adiAsRwa.tvl)}</b> ranks above Plume ({fmtUSD(rows.find((r) => r.name === 'Plume')?.tvl)}), Canton ({fmtUSD(rows.find((r) => r.name === 'Canton')?.tvl)}), MANTRA, XDC and Redbelly, but well below Provenance ({fmtUSD(rows.find((r) => r.name === 'Provenance')?.tvl)}, Figure Tech's mortgage-tokenisation flow). Provenance is the cohort's outlier on the TVL axis.
-          </p>
-          <p className="report-p" style={{ marginBottom: 8 }}>
-            <b>Mcap / TVL.</b> ADI sits at <b>{fmtX(adiAsRwa.mcaptvl)}</b> vs cohort median <b>{medMT == null ? '-' : fmtX(medMT)}</b>. The cohort itself spans extremes: Provenance below 1× (mature, capital-efficient), Canton at 6,000×+ (low-TVL infrastructure-layer chain where TVL is not the primary metric).
-          </p>
-          <p className="report-p muted" style={{ marginBottom: 0 }}>
-            <b>Caveats.</b> Growthepie does not track most RWA chains, so daily-active-wallets and tx columns are not yet populated for this cohort. Holder concentration is not pulled (most native tokens here are not ERC-20s indexed by Moralis). Redbelly's CoinGecko coverage is partial; only TVL pulled.
-          </p>
-        </div>
-      </div>
     </>
   );
 }

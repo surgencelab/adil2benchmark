@@ -71,60 +71,70 @@ export function OverviewPage({ data, setRoute }: Props) {
         </div>
       </div>
 
-      <div
-        className="widget w-6"
-        title="ADI position vs cohort medians + nearest peers, under both Mcap and FDV lenses"
-      >
+      <div className="widget w-6">
         <div className="widget-head">
-          <span className="widget-title">Where ADI sits</span>
-          <span className="widget-meta">peer + tier + audit lens</span>
+          <span className="widget-title">ADI vs cohort medians</span>
+          <span className="widget-meta">Mcap + FDV lenses · non-airdrop benchmark</span>
         </div>
-        <div className="widget-body">
-          <div className="position-read" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-            <div className="pr-cell">
-              <div className="pr-label">Mcap lens (price × circulating)</div>
-              <div className="pr-value">
-                ADI's <b>M/T {fmtX(adiMT, 2)}</b> vs non-airdrop cohort median <b>{fmtX(C.NonAirdrop?.mcap_tvl_med, 2)}</b>.
-                That's <span className="warn">{(adiMT / (C.NonAirdrop?.mcap_tvl_med || 1)).toFixed(1)}× the cohort median</span>.
-                Tight float (~10% circulating) flatters the number.
-              </div>
-            </div>
-            <div className="pr-cell" style={{ background: 'rgba(212,169,60,0.06)' }}>
-              <div className="pr-label">FDV lens · client preferred</div>
-              <div className="pr-value">
-                ADI's <b>FDV/TVL {fmtX(adiFDVTVL, 1)}</b> vs non-airdrop cohort median <b>{fmtX(C.NonAirdrop?.fdv_tvl_med, 2)}</b>.
-                That's <span className="danger">{(adiFDVTVL / (C.NonAirdrop?.fdv_tvl_med || 1)).toFixed(1)}× the cohort median</span>.
-                FDV doesn't depend on distribution; it's the apples-to-apples lens.
-              </div>
-            </div>
-          </div>
-          <div className="position-read" style={{ marginTop: 10 }}>
-            <div className="pr-cell">
-              <div className="pr-label">Nearest peers (by Mcap/TVL)</div>
-              <div className="pr-value">
-                {peers.map((p) => (
-                  <div key={p.name}>
-                    <b>{p.name}</b> M/T {fmtX(p._mt, 2)} · FDV/TVL {p.fdv_usd ? fmtX(p.fdv_usd / p.tvl, 2) : '-'}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="pr-cell">
-              <div className="pr-label">Cohort medians (n)</div>
-              <div className="pr-value">
-                Airdrop ({C.Airdrop?.n}) · M/T <b>{fmtX(C.Airdrop?.mcap_tvl_med, 2)}</b> · FDV/TVL <b>{fmtX(C.Airdrop?.fdv_tvl_med, 2)}</b><br />
-                Non-airdrop ({C.NonAirdrop?.n}) · M/T <b>{fmtX(C.NonAirdrop?.mcap_tvl_med, 2)}</b> · FDV/TVL <b>{fmtX(C.NonAirdrop?.fdv_tvl_med, 2)}</b><br />
-                No-token ({C.NoToken?.n}) · TVL med <b>{fmtUSD(C.NoToken?.tvl_med)}</b>
-              </div>
-            </div>
-            <div className="pr-cell">
-              <div className="pr-label">Audit-view gap</div>
-              <div className="pr-value">
-                DefiLlama M/T <span className="danger">{fmtX(adi.mcaptvl, 0)}</span> (no DDSC indexed).
-                On-chain M/T is <b>{fmtX(adiMT, 2)}</b>. The gap is a data-layer problem.
-              </div>
-            </div>
-          </div>
+        <div className="widget-body flush">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th className="right">ADI</th>
+                <th className="right">Cohort</th>
+                <th className="right">x median</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Mcap / TVL</td>
+                <td className="right">{fmtX(adiMT, 2)}</td>
+                <td className="right">{fmtX(C.NonAirdrop?.mcap_tvl_med, 2)}</td>
+                <td className="right"><span className="warn">{(adiMT / (C.NonAirdrop?.mcap_tvl_med || 1)).toFixed(1)}x</span></td>
+              </tr>
+              <tr>
+                <td>FDV / TVL</td>
+                <td className="right">{fmtX(adiFDVTVL, 1)}</td>
+                <td className="right">{fmtX(C.NonAirdrop?.fdv_tvl_med, 2)}</td>
+                <td className="right"><span className="danger">{(adiFDVTVL / (C.NonAirdrop?.fdv_tvl_med || 1)).toFixed(1)}x</span></td>
+              </tr>
+              <tr>
+                <td>M/T DefiLlama view</td>
+                <td className="right"><span className="danger">{fmtX(adi.mcaptvl, 0)}</span></td>
+                <td className="right muted">no DDSC indexed</td>
+                <td className="right muted">data gap</td>
+              </tr>
+              <tr className="row-section"><td colSpan={4}>// cohort medians (n)</td></tr>
+              <tr>
+                <td>Airdrop ({C.Airdrop?.n})</td>
+                <td className="right">M/T {fmtX(C.Airdrop?.mcap_tvl_med, 2)}</td>
+                <td className="right">FDV/T {fmtX(C.Airdrop?.fdv_tvl_med, 2)}</td>
+                <td className="right">-</td>
+              </tr>
+              <tr>
+                <td>Non-airdrop ({C.NonAirdrop?.n})</td>
+                <td className="right">M/T {fmtX(C.NonAirdrop?.mcap_tvl_med, 2)}</td>
+                <td className="right">FDV/T {fmtX(C.NonAirdrop?.fdv_tvl_med, 2)}</td>
+                <td className="right">-</td>
+              </tr>
+              <tr>
+                <td>No-token ({C.NoToken?.n})</td>
+                <td className="right">TVL med</td>
+                <td className="right">{fmtUSD(C.NoToken?.tvl_med)}</td>
+                <td className="right">-</td>
+              </tr>
+              <tr className="row-section"><td colSpan={4}>// nearest peers (by M/T)</td></tr>
+              {peers.map((p) => (
+                <tr key={p.name}>
+                  <td>{p.name}</td>
+                  <td className="right">M/T {fmtX(p._mt, 2)}</td>
+                  <td className="right">FDV/T {p.fdv_usd ? fmtX(p.fdv_usd / p.tvl, 2) : '-'}</td>
+                  <td className="right">-</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
