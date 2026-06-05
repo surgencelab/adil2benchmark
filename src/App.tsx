@@ -43,6 +43,22 @@ export default function App() {
 
   const refresh = async () => {
     if (refreshing) return;
+
+    // Vite-dev path: hit the local middleware which spawns the Python pipeline.
+    // Anywhere else (Vercel, file://, etc.): open the GitHub Actions trigger
+    // page in a new tab. Static hosting can't run Python; this is the real
+    // refresh path in production.
+    const isLocalDev = typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
+    if (!isLocalDev) {
+      window.open(
+        'https://github.com/surgencelab/adil2benchmark/actions/workflows/refresh-data.yml',
+        '_blank',
+        'noopener,noreferrer',
+      );
+      setRefreshMsg('Opened GitHub Actions in a new tab. Click "Run workflow" to refresh the dataset; the dashboard will redeploy automatically when the bot pushes the new data.json.');
+      return;
+    }
+
     setRefreshing(true);
     setRefreshMsg(null);
     try {
@@ -56,7 +72,7 @@ export default function App() {
         setRefreshMsg(`Refresh failed: ${j.stderr || 'unknown error'}`);
       }
     } catch (e: any) {
-      setRefreshMsg(`Refresh failed: ${e.message}. In production this would trigger a GitHub Actions workflow.`);
+      setRefreshMsg(`Refresh failed: ${e.message}`);
     } finally {
       setRefreshing(false);
     }
@@ -200,6 +216,8 @@ export default function App() {
         {active === 'overview' && <OverviewPage data={data} setRoute={setActive} openDetail={setDetail} />}
         {active === 'scatter' && <ChartsPage data={data} metric={metric} setMetric={setMetric} openDetail={setDetail} />}
         {active === 'table' && <L2UniversePage data={data} filterId={tableFilter} setFilterId={setTableFilter} openDetail={setDetail} />}
+        {active === 'rwa' && <RwaPage data={data} />}
+        {active === 'compare' && <ComparePage data={data} />}
         {active === 'report' && <ReportPage data={data} />}
         {active === 'methodology' && <MethodologyPage data={data} />}
       </MainWrap>
