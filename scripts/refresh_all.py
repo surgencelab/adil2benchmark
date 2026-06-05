@@ -41,6 +41,11 @@ def main():
     # since Moralis does not index those chains.
     run('fetch_holders_moralis.py')
 
+    # fetch_rwa.py pulls TVL + mcap/FDV for the RWA-native chain cohort
+    # (Canton, Provenance, Plume, MANTRA, XDC, Redbelly). Writes both
+    # /tmp/rwa_chains.json (cohort) and /tmp/canton.json (Compare-page snapshot).
+    run('fetch_rwa.py')
+
     # Merge: start from the existing data.json if present, then overlay
     # whatever the fetchers produced.
     if DATA_JSON.exists():
@@ -97,6 +102,15 @@ def main():
         adi['ddsc_fetched_at'] = d['fetched_at']
         adi['tvl_with_ddsc'] = adi.get('tvl_defillama_visible', 2_028_000) + d['tvl_usd']
         adi['mcaptvl_with_ddsc'] = adi['token_mcap'] / adi['tvl_with_ddsc']
+
+    # Merge RWA chain cohort
+    rwa_path = Path('/tmp/rwa_chains.json')
+    if rwa_path.exists():
+        d = json.loads(rwa_path.read_text())
+        data['rwa_rows'] = d.get('rows', [])
+    canton_path = Path('/tmp/canton.json')
+    if canton_path.exists():
+        data['canton'] = json.loads(canton_path.read_text())
 
     # Bump asOf
     import datetime as dt

@@ -13,6 +13,8 @@ import { ChartsPage } from './pages/Charts';
 import { L2UniversePage } from './pages/L2Universe';
 import { ReportPage } from './pages/Report';
 import { MethodologyPage } from './pages/Methodology';
+import { RwaPage } from './pages/RWA';
+import { ComparePage } from './pages/Compare';
 
 export default function App() {
   const { data, loading, error, reload } = useDataset();
@@ -157,6 +159,8 @@ export default function App() {
           {active === 'overview' && <OverviewPage data={data} setRoute={setActive} openDetail={setDetail} />}
           {active === 'scatter' && <ChartsPage data={data} metric={metric} setMetric={setMetric} openDetail={setDetail} />}
           {active === 'table' && <L2UniversePage data={data} filterId={tableFilter} setFilterId={setTableFilter} openDetail={setDetail} />}
+          {active === 'rwa' && <RwaPage data={data} />}
+          {active === 'compare' && <ComparePage data={data} />}
           {active === 'report' && <ReportPage data={data} />}
           {active === 'methodology' && <MethodologyPage data={data} />}
         </MainWrap>

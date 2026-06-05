@@ -107,8 +107,10 @@ export function useGlobalShortcuts(opts: {
       '1': 'overview',
       '2': 'scatter',
       '3': 'table',
-      '4': 'report',
-      '5': 'methodology',
+      '4': 'rwa',
+      '5': 'compare',
+      '6': 'report',
+      '7': 'methodology',
     };
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;

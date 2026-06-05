@@ -16,8 +16,10 @@ export const NAV: NavItem[] = [
   { id: 'overview',    label: 'Overview',    hotkey: '1' },
   { id: 'scatter',     label: 'Charts',      hotkey: '2' },
   { id: 'table',       label: 'L2 Universe', hotkey: '3' },
-  { id: 'report',      label: 'Report',      hotkey: '4' },
-  { id: 'methodology', label: 'Methodology', hotkey: '5' },
+  { id: 'rwa',         label: 'RWA',         hotkey: '4' },
+  { id: 'compare',     label: 'Compare',     hotkey: '5' },
+  { id: 'report',      label: 'Report',      hotkey: '6' },
+  { id: 'methodology', label: 'Methodology', hotkey: '7' },
 ];
 
 function NavIcon({ id }: { id: Route }) {
@@ -66,6 +68,29 @@ function NavIcon({ id }: { id: Route }) {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
           <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </svg>
+      );
+    case 'rwa':
+      // Stacked-bricks icon: tokenized assets / RWA building blocks
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="14" width="6" height="6" />
+          <rect x="9" y="14" width="6" height="6" />
+          <rect x="15" y="14" width="6" height="6" />
+          <rect x="6" y="8" width="6" height="6" />
+          <rect x="12" y="8" width="6" height="6" />
+          <rect x="9" y="2" width="6" height="6" />
+        </svg>
+      );
+    case 'compare':
+      // Two opposing arrows / scale: side-by-side comparison
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="12" y1="3" x2="12" y2="21" />
+          <polyline points="6 8 3 11 6 14" />
+          <line x1="3" y1="11" x2="11" y2="11" />
+          <polyline points="18 8 21 11 18 14" />
+          <line x1="13" y1="11" x2="21" y2="11" />
         </svg>
       );
   }

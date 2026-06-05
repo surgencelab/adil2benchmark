@@ -172,8 +172,43 @@ export interface Dataset {
   };
   history?: HistoryData;
   sparklines?: Record<string, number[]>;
+  rwa_rows?: RwaRow[];
+  canton?: CantonSnapshot;
 }
 
 export type Theme = 'dark' | 'light';
 export type Metric = 'mcap' | 'fdv';
-export type Route = 'overview' | 'scatter' | 'table' | 'report' | 'methodology';
+export type Route = 'overview' | 'scatter' | 'table' | 'rwa' | 'compare' | 'report' | 'methodology';
+
+/** RWA row schema: a thinner version of L2Row since not all metrics are available
+ *  for every RWA chain (Growthepie does not track most of these). */
+export interface RwaRow {
+  name: string;
+  symbol: string | null;
+  gecko_id?: string | null;
+  category: 'rwa';
+  distribution_note?: string;
+  tvl?: number | null;
+  token_mcap?: number | null;
+  fdv_usd?: number | null;
+  price_usd?: number | null;
+  total_volume_usd?: number | null;
+  max_supply?: number | null;
+  circulating_supply?: number | null;
+  total_supply?: number | null;
+  mcaptvl?: number | null;
+  fdv_tvl?: number | null;
+}
+
+/** Canton-specific snapshot for the Compare page. Quantitative fields come
+ *  from the same DefiLlama+CoinGecko fetchers; qualitative anchors (banking
+ *  partners, regulator posture, native stable status) are hand-curated. */
+export interface CantonSnapshot extends RwaRow {
+  banking_partners?: string;
+  regulator?: string;
+  native_stable?: string;
+  institutional_use?: string;
+  token_model?: string;
+  permissioning?: string;
+  launch_year?: number;
+}
